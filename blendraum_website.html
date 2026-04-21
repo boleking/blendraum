@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlendRaum — Digital Architecture Assets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0e0d0b;
+    --paper: #f5f2ec;
+    --warm-mid: #b8b0a2;
+    --accent: #c8a96e;
+    --accent-dim: #8a7250;
+    --rule: rgba(14,13,11,0.12);
+    --rule-strong: rgba(14,13,11,0.3);
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-mono: 'DM Mono', 'Courier New', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-weight: 300;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    line-height: 1.7;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 48px;
+    height: 64px;
+    border-bottom: 0.5px solid rgba(245,242,236,0.1);
+    background: rgba(14,13,11,0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    color: var(--paper);
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .nav-logo span {
+    color: var(--accent);
+  }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 40px;
+    align-items: center;
+  }
+
+  nav ul li a {
+    text-decoration: none;
+    color: var(--warm-mid);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.25s;
+    position: relative;
+  }
+
+  nav ul li a::after {
+    content: '';
+    position: absolute;
+    bottom: -3px; left: 0; right: 0;
+    height: 0.5px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+  }
+
+  nav ul li a:hover { color: var(--paper); }
+  nav ul li a:hover::after { transform: scaleX(1); }
+
+  nav ul li.cta a {
+    color: var(--accent);
+    border: 0.5px solid var(--accent-dim);
+    padding: 7px 20px;
+    border-radius: 1px;
+    transition: background 0.25s, color 0.25s;
+  }
+  nav ul li.cta a:hover {
+    background: var(--accent);
+    color: var(--ink);
+  }
+  nav ul li.cta a::after { display: none; }
+
+  /* HERO */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 48px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to bottom, rgba(14,13,11,0.3) 0%, rgba(14,13,11,0.75) 60%, rgba(14,13,11,1) 100%);
+    z-index: 1;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.07;
+    background-image:
+      linear-gradient(rgba(245,242,236,0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,242,236,0.5) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  .hero-index {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 2;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.3s forwards;
+  }
+
+  .hero-headline {
+    font-family: var(--font-display);
+    font-size: clamp(56px, 8vw, 120px);
+    font-weight: 300;
+    line-height: 0.92;
+    letter-spacing: -0.01em;
+    position: relative;
+    z-index: 2;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.5s forwards;
+  }
+
+  .hero-headline em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    position: relative;
+    z-index: 2;
+    margin-top: 40px;
+    display: flex;
+    align-items: flex-start;
+    gap: 48px;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.8s forwards;
+  }
+
+  .hero-sub p {
+    max-width: 380px;
+    color: var(--warm-mid);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+
+  .hero-sub .rule {
+    width: 1px;
+    height: 60px;
+    background: var(--rule-strong);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .hero-sub .metrics {
+    display: flex;
+    gap: 40px;
+  }
+
+  .metric-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .metric-num {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 300;
+    color: var(--paper);
+    line-height: 1;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    color: var(--warm-mid);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* SECTIONS */
+  section {
+    padding: 120px 48px;
+    border-top: 0.5px solid rgba(245,242,236,0.08);
+    position: relative;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    margin-bottom: 80px;
+  }
+
+  .section-num {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  .section-title em { font-style: italic; color: var(--accent); }
+
+  /* GRID CARDS */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1px;
+    background: rgba(245,242,236,0.06);
+  }
+
+  .card {
+    background: var(--ink);
+    padding: 40px 36px;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .card:hover { background: rgba(245,242,236,0.03); }
+  .card:hover::before { transform: scaleX(1); }
+
+  .card-icon {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 300;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .card-body {
+    font-size: 12px;
+    color: var(--warm-mid);
+    line-height: 1.9;
+  }
+
+  /* IMAGE ROW */
+  .image-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2px;
+    margin: 64px 0;
+    height: 260px;
+  }
+
+  .image-strip-item {
+    background: rgba(245,242,236,0.04);
+    border: 0.5px solid rgba(245,242,236,0.08);
+    display: flex;
+    align-items: flex-end;
+    padding: 16px;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+
+  .image-strip-item:hover { border-color: rgba(200,169,110,0.4); }
+
+  .image-strip-item span {
+    font-size: 10px;
+    color: var(--warm-mid);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+  }
+
+  .image-strip-item .strip-num {
+    position: absolute;
+    top: 16px; right: 16px;
+    font-family: var(--font-display);
+    font-size: 40px;
+    font-weight: 300;
+    color: rgba(245,242,236,0.06);
+    line-height: 1;
+    z-index: 0;
+  }
+
+  /* DIVIDER WITH TEXT */
+  .divider-line {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin: 80px 0;
+  }
+
+  .divider-line::before,
+  .divider-line::after {
+    content: '';
+    flex: 1;
+    height: 0.5px;
+    background: rgba(245,242,236,0.1);
+  }
+
+  .divider-line span {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--warm-mid);
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  /* QUOTE PULLOUT */
+  .pullout {
+    border-left: 1px solid var(--accent);
+    padding: 4px 0 4px 32px;
+    margin: 48px 0;
+  }
+
+  .pullout p {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--paper);
+    max-width: 600px;
+  }
+
+  .pullout cite {
+    display: block;
+    font-style: normal;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-top: 16px;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 0.5px solid rgba(245,242,236,0.1);
+    border-left: 0.5px solid rgba(245,242,236,0.1);
+    margin: 64px 0;
+  }
+
+  .stat-cell {
+    border-right: 0.5px solid rgba(245,242,236,0.1);
+    border-bottom: 0.5px solid rgba(245,242,236,0.1);
+    padding: 40px 32px;
+  }
+
+  .stat-cell .n {
+    font-family: var(--font-display);
+    font-size: 54px;
+    font-weight: 300;
+    color: var(--paper);
+    line-height: 1;
+    display: block;
+  }
+
+  .stat-cell .n em { color: var(--accent); font-style: normal; }
+
+  .stat-cell .l {
+    font-size: 11px;
+    color: var(--warm-mid);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 8px;
+    display: block;
+  }
+
+  /* CONTACT */
+  #contact {
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  #contact .section-num { color: var(--accent-dim); }
+  #contact .section-title { color: var(--ink); }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: start;
+  }
+
+  .contact-left p {
+    color: #5a5650;
+    font-size: 13px;
+    line-height: 1.9;
+    max-width: 420px;
+    margin-bottom: 40px;
+  }
+
+  .contact-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .contact-detail-row {
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+  }
+
+  .contact-detail-row .label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent-dim);
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
+  .contact-detail-row a,
+  .contact-detail-row span {
+    font-size: 13px;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 0.5px solid rgba(14,13,11,0.2);
+  }
+
+  .contact-detail-row a:hover { border-bottom-color: var(--accent-dim); color: var(--accent-dim); }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent-dim);
+  }
+
+  .form-group input,
+  .form-group textarea {
+    background: transparent;
+    border: none;
+    border-bottom: 0.5px solid rgba(14,13,11,0.25);
+    padding: 10px 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+    resize: none;
+    transition: border-color 0.25s;
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus {
+    border-bottom-color: var(--accent-dim);
+  }
+
+  .form-group input::placeholder,
+  .form-group textarea::placeholder {
+    color: rgba(14,13,11,0.3);
+  }
+
+  .submit-btn {
+    align-self: flex-start;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 14px 40px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.25s;
+    border-radius: 1px;
+  }
+
+  .submit-btn:hover { background: var(--accent-dim); }
+
+  /* FOOTER */
+  footer {
+    background: var(--ink);
+    padding: 32px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 0.5px solid rgba(245,242,236,0.08);
+  }
+
+  footer p {
+    font-size: 11px;
+    color: rgba(245,242,236,0.3);
+    letter-spacing: 0.08em;
+  }
+
+  footer a {
+    font-size: 11px;
+    color: var(--accent-dim);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    nav ul { gap: 16px; }
+    nav ul li:not(.cta) { display: none; }
+    section { padding: 80px 20px; }
+    #hero { padding: 0 20px 60px; }
+    .hero-sub { flex-direction: column; gap: 24px; }
+    .hero-sub .rule { display: none; }
+    .hero-sub .metrics { gap: 24px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .contact-grid { grid-template-columns: 1fr; gap: 48px; }
+    footer { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#hero" class="nav-logo">Blend<span>Raum</span></a>
+  <ul>
+    <li><a href="#digital-twin">01 — Digital Twin</a></li>
+    <li><a href="#narrative">02 — AI Revolution</a></li>
+    <li><a href="#sales">03 — Sales Engine</a></li>
+    <li class="cta"><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-bg"></div>
+
+  <div class="hero-index">Graz, Austria — Est. 2024</div>
+  <h1 class="hero-headline">
+    Architecture<br>
+    made <em>buildable.</em><br>
+    Projects made<br>
+    <em>sellable.</em>
+  </h1>
+  <div class="hero-sub">
+    <div class="rule"></div>
+    <p>Transforming architectural design into high-performance digital assets. BlendRaum bridges the gap between creative concept and market-ready investment.</p>
+    <div class="metrics">
+      <div class="metric-item">
+        <span class="metric-num">3×</span>
+        <span class="metric-label">Faster render</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-num">20%</span>
+        <span class="metric-label">Faster sales</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-num">7%</span>
+        <span class="metric-label">Price premium</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 01 DIGITAL TWIN -->
+<section id="digital-twin">
+  <div class="section-header reveal">
+    <span class="section-num">01</span>
+    <h2 class="section-title">Digital <em>Twin</em></h2>
+  </div>
+
+  <div class="card-grid reveal">
+    <div class="card">
+      <div class="card-icon">Site Capture</div>
+      <h3 class="card-title">From site to<br>precision model</h3>
+      <p class="card-body">Advanced drone photogrammetry maps project sites with 10 cm accuracy, meeting legal requirements for modern submissions and delivering precise design detail.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">BIM Compliance</div>
+      <h3 class="card-title">2D sketch to<br>IFC standard</h3>
+      <p class="card-body">We bridge the gap from hand drawings to BIM-ready IFC files, reducing permit processing times by up to 50% through automated authority compliance.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">Rapid Prototyping</div>
+      <h3 class="card-title">3D file to<br>physical model</h3>
+      <p class="card-body">High-speed 3D printing and laser cutting produce competition-grade physical models essential for client presentations and architectural competition wins.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">Measurement</div>
+      <h3 class="card-title">Scanning &<br>documentation</h3>
+      <p class="card-body">Comprehensive 3D scanning services for existing structures, renovation sites, and historical buildings — precise, submittable, compliant.</p>
+    </div>
+  </div>
+
+  <div class="image-strip reveal">
+    <div class="image-strip-item">
+      <div class="strip-num">01</div>
+      <span>Mass model — KS 211 Graz</span>
+    </div>
+    <div class="image-strip-item">
+      <div class="strip-num">02</div>
+      <span>BIM Schema — Hart bei Graz</span>
+    </div>
+    <div class="image-strip-item">
+      <div class="strip-num">03</div>
+      <span>Construction phases</span>
+    </div>
+    <div class="image-strip-item">
+      <div class="strip-num">04</div>
+      <span>Regional rail — Linz AG</span>
+    </div>
+    <div class="image-strip-item">
+      <div class="strip-num">05</div>
+      <span>Shopping center Vienna</span>
+    </div>
+  </div>
+
+  <div class="stats-row reveal">
+    <div class="stat-cell">
+      <span class="n">10<em>cm</em></span>
+      <span class="l">Site mapping accuracy</span>
+    </div>
+    <div class="stat-cell">
+      <span class="n">50<em>%</em></span>
+      <span class="l">Permit time reduction</span>
+    </div>
+    <div class="stat-cell">
+      <span class="n">IFC</span>
+      <span class="l">BIM standard output</span>
+    </div>
+    <div class="stat-cell">
+      <span class="n">48<em>h</em></span>
+      <span class="l">Print-ready turnaround</span>
+    </div>
+  </div>
+</section>
+
+<!-- 02 NARRATIVE IMPACT -->
+<section id="narrative">
+  <div class="section-header reveal">
+    <span class="section-num">02</span>
+    <h2 class="section-title">Narrative Impact:<br>The <em>AI Revolution</em></h2>
+  </div>
+
+  <div class="pullout reveal">
+    <p>"We've swapped traditional, slow rendering pipelines for fast, agentic AI workflows — photorealistic cinematic visuals delivered 3× faster than traditional studios."</p>
+    <cite>BlendRaum Method</cite>
+  </div>
+
+  <div class="card-grid reveal">
+    <div class="card">
+      <div class="card-icon">Rendering</div>
+      <h3 class="card-title">Hyper-realistic<br>visuals</h3>
+      <p class="card-body">Photorealistic cinematic renderings produced at 3× the speed of traditional studios. Rapid design iterations without compromising visual quality or stakeholder confidence.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">Animation</div>
+      <h3 class="card-title">Cinematic<br>storytelling</h3>
+      <p class="card-body">Architecture brought to life through AI-powered animation and immersive walkthroughs. Complex spatial narratives communicated clearly to any audience.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">Portfolio</div>
+      <h3 class="card-title">Proven<br>projects</h3>
+      <p class="card-body">HTG Villa Graz · Bratislava South Bank · Therme St. Kanzian · Hart bei Graz Ortszentrum · Tourist development Dubrovnik · Hotels St. Kazian</p>
+    </div>
+  </div>
+
+  <div class="divider-line reveal">
+    <span>Selected work</span>
+  </div>
+
+  <div class="stats-row reveal">
+    <div class="stat-cell">
+      <span class="n">3<em>×</em></span>
+      <span class="l">Rendering speed</span>
+    </div>
+    <div class="stat-cell">
+      <span class="n">AI</span>
+      <span class="l">Agentic workflows</span>
+    </div>
+    <div class="stat-cell">
+      <span class="n">VR</span>
+      <span class="l">Interactive delivery</span>
+    </div>
+    <div class="stat-cell">
+      <span class="n">4K</span>
+      <span class="l">Cinematic output</span>
+    </div>
+  </div>
+</section>
+
+<!-- 03 SALES ENGINE -->
+<section id="sales">
+  <div class="section-header reveal">
+    <span class="section-num">03</span>
+    <h2 class="section-title">The Sales <em>Engine</em></h2>
+  </div>
+
+  <div class="card-grid reveal">
+    <div class="card">
+      <div class="card-icon">Digital Twins</div>
+      <h3 class="card-title">Interactive 3D<br>ecosystems</h3>
+      <p class="card-body">Projects packaged into VR-ready, interactive digital twins. Users explore interiors and construction phasing in real-time on any device — stakeholder engagement up by 50%.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">Web Platforms</div>
+      <h3 class="card-title">Project<br>platforms</h3>
+      <p class="card-body">Custom web ecosystems — domain + design + content — that turn architectural designs into investment-ready brands with measurable market presence.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">Commercial Results</div>
+      <h3 class="card-title">Faster sales,<br>higher price</h3>
+      <p class="card-body">Projects using integrated digital assets sell 20% faster and achieve price premiums of 3–7%, thanks to higher perceived value and stronger buyer trust.</p>
+    </div>
+  </div>
+
+  <div class="stats-row reveal">
+    <div class="stat-cell">
+      <span class="n">20<em>%</em></span>
+      <span class="l">Faster project sales</span>
+    </div>
+    <div class="stat-cell">
+      <span class="n">7<em>%</em></span>
+      <span class="l">Price premium</span>
+    </div>
+    <div class="stat-cell">
+      <span class="n">50<em>%</em></span>
+      <span class="l">More engagement</span>
+    </div>
+    <div class="stat-cell">
+      <span class="n">∞</span>
+      <span class="l">Scalable assets</span>
+    </div>
+  </div>
+
+  <div class="pullout reveal">
+    <p>"The transition from a 'building plan' to a 'structured asset' is the key to architectural success in 2026."</p>
+    <cite>BlendRaum — Executive Summary</cite>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-header reveal">
+    <span class="section-num">Contact</span>
+    <h2 class="section-title">Start a<br><em>project</em></h2>
+  </div>
+
+  <div class="contact-grid">
+    <div class="contact-left reveal">
+      <p>BlendRaum acts as an externalized innovation department — equipping small-to-mid-sized firms with the technical precision, AI-driven visualization, and commercial infrastructure of a global enterprise.</p>
+      <div class="contact-detail">
+        <div class="contact-detail-row">
+          <span class="label">Location</span>
+          <span>Graz, Austria</span>
+        </div>
+        <div class="contact-detail-row">
+          <span class="label">Focus</span>
+          <span>Architecture · BIM · AI Visualization</span>
+        </div>
+        <div class="contact-detail-row">
+          <span class="label">Web</span>
+          <a href="https://www.ortszentrum-hbg.at/" target="_blank">ortszentrum-hbg.at</a>
+        </div>
+        <div class="contact-detail-row">
+          <span class="label">Invest</span>
+          <a href="https://www.investkanzian.com/" target="_blank">investkanzian.com</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-form reveal">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" placeholder="Your name">
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label for="project">Project brief</label>
+        <textarea id="project" rows="4" placeholder="Tell us about your project…"></textarea>
+      </div>
+      <button class="submit-btn">Send inquiry →</button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 BlendRaum — Graz, Austria</p>
+  <a href="#hero">↑ Back to top</a>
+</footer>
+
+<script>
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
