@@ -8,10 +8,10 @@ export const STAGES = ['resort', 'zone', 'ort', 'schritt'] as const;
 export type Stage = (typeof STAGES)[number];
 
 export const STAGE_LABELS: Record<Stage, string> = {
-  resort: 'Resort',
-  zone: 'Zone',
+  resort: 'Übersicht',
+  zone: 'Bereich',
   ort: 'Ort',
-  schritt: 'Route-Schritt',
+  schritt: 'Schritt',
 };
 
 export interface CamState {

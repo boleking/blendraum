@@ -1,15 +1,27 @@
+/*
+ * Layout nach dem Gästeweg (Handy zuerst): die Karte füllt den Schirm, unten ein ruhiges Blatt
+ * mit Ort, Ansicht und Bereichen in Daumenreichweite, rechts die Zoom-Leiste.
+ * Bestand/Neu ist ein Planungswerkzeug und sitzt klein oben rechts.
+ * Nachtgrund: schwarz, warmes Licht (2700 K) als einziger Akzent.
+ */
 :root {
-  --bg: #eee5d6;
-  --panel: rgba(251, 246, 238, 0.92);
-  --ink: #2c241c;
-  --muted: #6e6152;
-  --line: #d9cbb6;
-  --accent: #b5641f;
-  --accent-ink: #fff8ef;
-  --radius: 12px;
-  --gap: 8px;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --bg: #000;
+  --sheet: rgba(18, 16, 14, 0.9);
+  --chip: rgba(255, 244, 228, 0.07);
+  --ink: #f3ece2;
+  --muted: #a89d90;
+  --line: rgba(255, 244, 228, 0.14);
+  --accent: #e0913f;
+  --accent-ink: #1a1009;
+  --focus: #8cc4ff;
+  --warn: #f0c060;
+  --bad: #ff8a7a;
+  --radius: 16px;
+  --gap: 10px;
+  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font);
   color: var(--ink);
+  color-scheme: dark;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -35,137 +47,225 @@ body {
   outline: none;
 }
 
-.brand {
-  position: fixed;
-  top: max(12px, env(safe-area-inset-top));
-  left: 16px;
-  pointer-events: none;
-}
-.brand h1 {
-  margin: 0;
-  font-size: 17px;
-  letter-spacing: 0.02em;
-}
-.brand p {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.panel {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
-  background: var(--panel);
-  border-top: 1px solid var(--line);
-  backdrop-filter: blur(10px);
-  display: grid;
-  gap: var(--gap);
-}
-
-.where {
-  margin: 0;
-  font-weight: 600;
-  font-size: 15px;
-  min-height: 1.3em;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: var(--gap);
-}
-
 button {
   font: inherit;
   color: inherit;
   min-height: 44px;
   min-width: 44px;
-  padding: 0 10px;
+  padding: 0 14px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fffaf3;
+  border-radius: 999px;
+  background: var(--chip);
   cursor: pointer;
 }
 button[aria-pressed='true'] {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
+  font-weight: 600;
 }
 button:focus-visible {
-  outline: 3px solid #1f5fa8;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 button:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: default;
 }
-.icon {
+
+/* Kopfzeile: Titel links, Planungsschalter rechts */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
+}
+.topbar > * {
+  pointer-events: auto;
+}
+.brand {
+  min-width: 0;
+  pointer-events: none;
+  /* lesbar auch über hellen Fotostellen */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.brand h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brand p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  flex: none;
+}
+.scope {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.variant {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--sheet);
+}
+.variant button {
+  border: 0;
+  min-height: 36px;
+  min-width: 0;
+  padding: 0 14px;
+  background: transparent;
+  font-size: 14px;
+}
+.variant button[aria-pressed='true'],
+.stages button[aria-pressed='true'] {
+  background: var(--accent);
+}
+
+/* Zoom-Leiste rechts, über dem Blatt */
+.zoom {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(var(--sheet-h, 220px) + 16px);
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--sheet);
+  overflow: hidden;
+}
+.zoom button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   font-size: 22px;
   line-height: 1;
   padding: 0;
+  width: 48px;
+  height: 48px;
+}
+.zoom button + button {
+  border-top: 1px solid var(--line);
+}
+
+/* Blatt unten: Ort, Ansicht, Bereiche */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px max(16px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: var(--sheet);
+  border-top: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+  backdrop-filter: blur(14px);
+  display: grid;
+  gap: var(--gap);
+}
+.sheet::before {
+  content: '';
+  justify-self: center;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+.where-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.where-row button {
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+  background: transparent;
+  border-color: transparent;
+}
+.where {
+  margin: 0;
+  min-width: 0;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  text-wrap: balance;
 }
 
 .stages {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
 }
 .stages button {
-  font-size: 14px;
+  border: 0;
+  min-width: 0;
   padding: 0 4px;
-}
-.long {
-  display: none;
+  background: transparent;
+  font-size: 14px;
 }
 
+/* Bereiche als waagrechte Reihe, wischbar */
 .zones {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 calc(-1 * max(16px, env(safe-area-inset-left)));
+  padding: 0 max(16px, env(safe-area-inset-left));
+}
+.zones::-webkit-scrollbar {
+  display: none;
 }
 .zones button {
   position: relative;
-  padding: 0 4px;
-  min-width: 0;
+  flex: none;
+  max-width: 14em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 14px;
 }
-/* Punkt markiert Zonen, die "Neu" zeigen */
+/* Punkt markiert Bereiche, die "Neu" zeigen */
 .zones button[data-neu='true']::after {
   content: '';
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 6px;
+  right: 8px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: currentColor;
 }
 
-.scope {
-  flex: 1;
-  font-size: 14px;
-  color: var(--muted);
-}
-.variant {
-  display: flex;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.variant button {
-  border: 0;
-  border-radius: 0;
-  min-width: 88px;
-}
-
-.zoom .hint {
-  flex: 1;
+.hint {
+  display: none;
   margin: 0;
   text-align: center;
   font-size: 12px;
@@ -179,8 +279,8 @@ button:disabled {
   transform: translate(-50%, -50%);
   max-width: min(90vw, 520px);
   padding: 12px 16px;
-  border-radius: var(--radius);
-  background: var(--panel);
+  border-radius: 12px;
+  background: var(--sheet);
   border: 1px solid var(--line);
   font-size: 14px;
 }
@@ -202,28 +302,41 @@ button:disabled {
   white-space: nowrap;
 }
 
+/* Desktop: Blatt schwebt mittig unten, die Szene bleibt frei */
 @media (min-width: 900px) {
-  .panel {
-    left: 16px;
+  .sheet {
+    left: 50%;
     right: auto;
     bottom: 16px;
-    width: 360px;
+    width: min(600px, calc(100vw - 200px));
+    transform: translateX(-50%);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 12px 16px 14px;
   }
-  .long {
-    display: inline;
-  }
-  .short {
+  .sheet::before {
     display: none;
+  }
+  .zones {
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .zoom {
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+  }
+  .hint {
+    display: block;
   }
 }
 
 /* Messanzeige (#messen) */
 .messen {
   position: fixed;
-  top: max(64px, calc(env(safe-area-inset-top) + 52px));
+  top: max(100px, calc(env(safe-area-inset-top) + 88px));
   left: 16px;
   right: 16px;
   max-width: 340px;
@@ -265,10 +378,10 @@ button:disabled {
   text-align: right;
 }
 .messen dd[data-urteil='knapp'] {
-  color: #8a5a00;
+  color: var(--warn);
 }
 .messen dd[data-urteil='über'] {
-  color: #a3261b;
+  color: var(--bad);
   font-weight: 600;
 }
 .messen-knopf {

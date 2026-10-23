@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="dark" />
     <meta name="description" content="Twin Test – Platzhalter-Viewer für ein Thermenresort. Keine echten Daten." />
     <link rel="icon" href="data:," />
     <title>Twin Test</title>
@@ -11,42 +11,42 @@
   <body>
     <canvas id="view" aria-label="3D-Ansicht des Platzhalter-Resorts" role="img"></canvas>
 
-    <header class="brand">
-      <h1 id="brand-title">Twin Test</h1>
-      <p id="brand-sub">Platzhalter · keine echten Daten</p>
-    </header>
-
-    <section class="panel" id="panel" aria-label="Steuerung" hidden>
-      <p class="where" id="where"></p>
-
-      <div class="stages" role="group" aria-label="Zoomstufe">
-        <button type="button" data-stage="resort">Resort</button>
-        <button type="button" data-stage="zone">Zone</button>
-        <button type="button" data-stage="ort">Ort</button>
-        <button type="button" data-stage="schritt" aria-label="Route-Schritt">
-          <span class="long">Route-Schritt</span><span class="short">Schritt</span>
-        </button>
+    <header class="topbar">
+      <div class="brand">
+        <h1 id="brand-title">Twin Test</h1>
+        <p id="brand-sub">Platzhalter · keine echten Daten</p>
       </div>
-
-      <div class="row">
-        <button type="button" class="icon" id="prev" aria-label="Vorherige">‹</button>
-        <div class="zones" id="zones" role="group" aria-label="Zone wählen"></div>
-        <button type="button" class="icon" id="next" aria-label="Nächste">›</button>
-      </div>
-
-      <div class="row">
+      <div class="plan">
         <span class="scope" id="scope"></span>
         <div class="variant" role="group" aria-labelledby="scope">
           <button type="button" data-variant="bestand">Bestand</button>
           <button type="button" data-variant="neu">Neu</button>
         </div>
       </div>
+    </header>
 
-      <div class="row zoom">
-        <button type="button" class="icon" id="zoom-out" aria-label="Herauszoomen">−</button>
-        <p class="hint" id="hint">Pfeile, + / −, B / N · Wischen, Zwei-Finger-Zoom</p>
-        <button type="button" class="icon" id="zoom-in" aria-label="Hineinzoomen">+</button>
+    <div class="zoom" id="zoom" role="group" aria-label="Zoom" hidden>
+      <button type="button" id="zoom-in" aria-label="Hineinzoomen">+</button>
+      <button type="button" id="zoom-out" aria-label="Herauszoomen">−</button>
+    </div>
+
+    <section class="sheet" id="panel" aria-label="Steuerung" hidden>
+      <div class="where-row">
+        <button type="button" id="prev" aria-label="Vorheriger Bereich">‹</button>
+        <p class="where" id="where"></p>
+        <button type="button" id="next" aria-label="Nächster Bereich">›</button>
       </div>
+
+      <div class="stages" role="group" aria-label="Ansicht">
+        <button type="button" data-stage="resort">Übersicht</button>
+        <button type="button" data-stage="zone">Bereich</button>
+        <button type="button" data-stage="ort">Ort</button>
+        <button type="button" data-stage="schritt">Schritt</button>
+      </div>
+
+      <div class="zones" id="zones" role="group" aria-label="Bereich wählen"></div>
+
+      <p class="hint">Pfeile, + / −, B / N · Wischen, Zwei-Finger-Zoom</p>
     </section>
 
     <div class="notice" id="notice" role="status">Lade Twin …</div>

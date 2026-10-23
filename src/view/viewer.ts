@@ -28,7 +28,7 @@ import { cameraPosition, easeInOutCubic, mixState, STAGES, type CamState, type S
 import { kelvinToRgb, WARM_KELVIN } from './light';
 import { cameraFor, placeWorld, resortBounds, type Selection } from './nav';
 
-const BACKGROUND = 0xeee5d6;
+const BACKGROUND = 0x000000;
 const ACCENT = 0xc8752e;
 
 interface Tween {
@@ -74,6 +74,8 @@ export class Viewer {
     private baseUrl: string,
     /** Optional: Modelldaten aus einer anderen Quelle als einzelnen GLB-Dateien (z. B. Bündel). */
     private source?: (file: string) => Promise<ArrayBuffer>,
+    /** Gelände anzeigen, falls das Paket eines hat. Standard aus: Das Modell steht frei auf Schwarz. */
+    private showTerrain = false,
   ) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.outputColorSpace = SRGBColorSpace;
@@ -117,8 +119,8 @@ export class Viewer {
     // Gelände (nur in Paketen, die eines mitbringen) liegt unter allen Zonen.
     let terrainDone = () => {};
     this.terrainReady = new Promise((r) => (terrainDone = r));
-    if (!twin.terrain) terrainDone();
-    if (twin.terrain) {
+    if (!twin.terrain || !showTerrain) terrainDone();
+    if (twin.terrain && showTerrain) {
       const file = twin.terrain.file;
       this.busy(+1);
       this.load(file)
@@ -126,7 +128,7 @@ export class Viewer {
           const terrain = model.clone();
           terrain.name = 'terrain';
           this.scene.add(terrain);
-          this.drapeOutlines(terrain);
+          this.drapeOutlines([terrain], 'max');
           this.requestFrame();
         })
         .catch((e) => this.onError(e))
@@ -157,12 +159,14 @@ export class Viewer {
     }
 
     // Umriss je Zone entlang des Grundrisses; mit Gelände wird er später auf die Oberfläche gelegt.
-    const outlineMat = new LineBasicMaterial({ color: ACCENT });
+    // Immer sichtbar über dem Modell: ohne Gelände läge der Umriss sonst meist im Bestand verborgen.
+    const outlineMat = new LineBasicMaterial({ color: ACCENT, depthTest: false, transparent: true, opacity: 0.9 });
     for (const zone of twin.zones) {
       const geo = new BufferGeometry();
       const y = (zone.base ?? 0) + 0.03;
       geo.setAttribute('position', new Float32BufferAttribute(zone.footprint.flatMap(([x, z]) => [x, y, z]), 3));
       const line = new LineLoop(geo, outlineMat);
+      line.renderOrder = 10;
       line.visible = false;
       this.outlines.set(zone.id, line);
       this.scene.add(line);
@@ -242,41 +246,58 @@ export class Viewer {
   }
 
   /**
-   * Legt die Zonenumrisse auf das Gelände (alle 4 m ein Punkt, 1 m darüber).
-   * Höhen aus einem Raster der Gelände-Vertices (höchster Punkt je 4-m-Feld und Nachbarn) –
-   * Raycasts gegen das ganze Gelände blockierten den Browser mehrere Sekunden.
+   * Ohne Gelände: Umrisse auf die geladenen Zonenmodelle legen, mit dem tiefsten Punkt je Feld
+   * (Boden statt Dächer und Bäume).
    */
-  private drapeOutlines(terrain: Object3D) {
-    terrain.updateMatrixWorld(true);
+  drapeOnZones() {
+    if (this.twin.terrain && this.showTerrain) return;
+    this.drapeOutlines([...this.holders.values()], 'min');
+    this.requestFrame();
+  }
+
+  /**
+   * Legt die Zonenumrisse auf eine Oberfläche (alle 4 m ein Punkt, 1 m darüber).
+   * Höhen aus einem Raster der Vertices – höchster (Gelände) oder tiefster (Bestand) Punkt
+   * je 4-m-Feld und Nachbarn. Raycasts gegen das ganze Gelände blockierten den Browser mehrere Sekunden.
+   */
+  private drapeOutlines(surfaces: Object3D[], mode: 'max' | 'min') {
+    const pick = mode === 'max' ? Math.max : Math.min;
+    const none = mode === 'max' ? -Infinity : Infinity;
     const CELL = 4;
     const heights = new Map<string, number>();
     const v = new Vector3();
-    terrain.traverse((o) => {
-      if (!(o instanceof Mesh)) return;
-      const pos = o.geometry.getAttribute('position');
-      for (let i = 0; i < pos.count; i++) {
-        v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
-        const key = `${Math.round(v.x / CELL)},${Math.round(v.z / CELL)}`;
-        heights.set(key, Math.max(heights.get(key) ?? -Infinity, v.y));
-      }
-    });
+    for (const surface of surfaces) {
+      surface.updateMatrixWorld(true);
+      surface.traverse((o) => {
+        if (!(o instanceof Mesh)) return;
+        const pos = o.geometry.getAttribute('position');
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+          const key = `${Math.round(v.x / CELL)},${Math.round(v.z / CELL)}`;
+          heights.set(key, pick(heights.get(key) ?? none, v.y));
+        }
+      });
+    }
     const heightAt = (x: number, z: number) => {
       const i = Math.round(x / CELL);
       const j = Math.round(z / CELL);
-      let h = -Infinity;
-      for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) h = Math.max(h, heights.get(`${i + di},${j + dj}`) ?? -Infinity);
+      let h = none;
+      for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) h = pick(h, heights.get(`${i + di},${j + dj}`) ?? none);
       return Number.isFinite(h) ? h : null;
     };
     for (const zone of this.twin.zones) {
       const pts: number[] = [];
       const fp = zone.footprint;
+      // Löcher im Modell (keine Punkte im Feld): letzte bekannte Höhe halten statt auf ±0 zu fallen.
+      let lastH = zone.base ?? 0;
       fp.forEach(([x0, z0], i) => {
         const [x1, z1] = fp[(i + 1) % fp.length];
         const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 4));
         for (let k = 0; k < n; k++) {
           const x = x0 + ((x1 - x0) * k) / n;
           const z = z0 + ((z1 - z0) * k) / n;
-          pts.push(x, (heightAt(x, z) ?? zone.base ?? 0) + 1, z);
+          lastH = heightAt(x, z) ?? lastH;
+          pts.push(x, lastH + 1, z);
         }
       });
       this.outlines.get(zone.id)!.geometry.setAttribute('position', new Float32BufferAttribute(pts, 3));

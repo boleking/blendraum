@@ -86,7 +86,7 @@ export function cameraFor(twin: Twin, sel: Selection): CamState {
   const lens = STAGE_LENS[sel.stage];
   if (sel.stage === 'resort') {
     const b = resortBounds(twin);
-    return { ...lens, target: [b.center[0], 2, b.center[2]], frame: b.size * 1.05 };
+    return { ...lens, target: [b.center[0], 2, b.center[2]], frame: b.size };
   }
   if (sel.stage === 'zone') {
     const z = twin.zones.find((x) => x.id === sel.zoneId)!;
@@ -102,7 +102,8 @@ export function cameraFor(twin: Twin, sel: Selection): CamState {
 /** Kurzer deutscher Text für die aktuelle Auswahl. */
 export function describe(twin: Twin, sel: Selection): string {
   const zone = twin.zones.find((z) => z.id === sel.zoneId)!;
-  if (sel.stage === 'resort') return `${twin.title} – Übersicht`;
+  // Der Titel steht schon in der Kopfzeile; hier nur, was man sieht.
+  if (sel.stage === 'resort') return `Übersicht · ${twin.zones.length} ${twin.zones.length === 1 ? 'Bereich' : 'Bereiche'}`;
   if (sel.stage === 'zone') return zone.label;
   const place = twin.places.find((p) => p.id === sel.placeId)!;
   if (sel.stage === 'ort') return `${zone.label} · ${place.label}`;

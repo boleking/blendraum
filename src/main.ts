@@ -52,7 +52,9 @@ function showError(e: unknown) {
 function start(twin: Twin) {
   const canvas = $<HTMLCanvasElement>('view');
   const panel = $('panel');
-  const viewer = new Viewer(canvas, twin, base, import.meta.env.VITE_MODEL_BUNDLE ? bundledModels() : undefined);
+  // Gelände nur auf Wunsch (?gelaende): ohne steht das Modell frei auf Schwarz und lädt schneller.
+  const showTerrain = new URLSearchParams(location.search).has('gelaende');
+  const viewer = new Viewer(canvas, twin, base, import.meta.env.VITE_MODEL_BUNDLE ? bundledModels() : undefined, showTerrain);
   viewer.onError = showError;
 
   // Kopfzeile folgt dem Paket: Platzhalter oder interner Arbeitsstand.
@@ -73,7 +75,6 @@ function start(twin: Twin) {
 
   // Zonen-Chips
   const zonesEl = $('zones');
-  zonesEl.style.gridTemplateColumns = `repeat(${twin.zones.length}, minmax(0, 1fr))`;
   const chips = twin.zones.map((z) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -84,7 +85,7 @@ function start(twin: Twin) {
     return b;
   });
   const stageButtons = [...panel.querySelectorAll<HTMLButtonElement>('[data-stage]')];
-  const variantButtons = [...panel.querySelectorAll<HTMLButtonElement>('[data-variant]')];
+  const variantButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-variant]')];
 
   function render() {
     const zone = twin.zones.find((z) => z.id === sel.zoneId)!;
@@ -96,7 +97,7 @@ function start(twin: Twin) {
       chips[i].setAttribute('aria-label', `${z.label}, ${z.variants[variants[z.id]]!.label}`);
     });
     const all = sel.stage === 'resort';
-    $('scope').textContent = all ? 'Alle Zonen' : zone.label;
+    $('scope').textContent = all ? 'Alle Bereiche' : (zone.short ?? zone.label);
     const shown = all ? new Set(Object.values(variants)) : new Set([variants[zone.id]]);
     for (const b of variantButtons) b.setAttribute('aria-pressed', String(shown.size === 1 && shown.has(b.dataset.variant as VariantKey)));
     // Ohne Entwurf gibt es nichts umzuschalten.
@@ -105,9 +106,9 @@ function start(twin: Twin) {
     neuButton.title = neuButton.disabled ? 'Für diese Zone gibt es keinen Entwurf' : '';
     $<HTMLButtonElement>('zoom-in').disabled = sel.stage === 'schritt';
     $<HTMLButtonElement>('zoom-out').disabled = sel.stage === 'resort';
-    const what = { resort: 'Zone', zone: 'Zone', ort: 'Ort', schritt: 'Schritt' }[sel.stage];
-    $('prev').setAttribute('aria-label', `Vorherige ${what}`);
-    $('next').setAttribute('aria-label', `Nächste${what === 'Zone' ? '' : 'r'} ${what}`);
+    const what = { resort: 'Bereich', zone: 'Bereich', ort: 'Ort', schritt: 'Schritt' }[sel.stage];
+    $('prev').setAttribute('aria-label', `Vorheriger ${what}`);
+    $('next').setAttribute('aria-label', `Nächster ${what}`);
   }
 
   function announce(text: string) {
@@ -132,7 +133,7 @@ function start(twin: Twin) {
       viewer.showVariant(z.id, v).catch(showError);
     }
     render();
-    announce(`${sel.stage === 'resort' ? 'Alle Zonen' : twin.zones.find((z) => z.id === sel.zoneId)!.label}: ${v === 'neu' ? 'Neu' : 'Bestand'}`);
+    announce(`${sel.stage === 'resort' ? 'Alle Bereiche' : twin.zones.find((z) => z.id === sel.zoneId)!.label}: ${v === 'neu' ? 'Neu' : 'Bestand'}`);
   }
 
   for (const b of stageButtons) b.addEventListener('click', () => go(setStage(twin, sel, b.dataset.stage as Stage)));
@@ -216,15 +217,17 @@ function start(twin: Twin) {
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
 
-  // Layout: Szene in den Bereich neben/über der Steuerung zentrieren
+  // Layout: Szene über dem Blatt zentrieren; die Zoom-Leiste sitzt (mobil) knapp darüber.
   const layout = () => {
-    const r = panel.getBoundingClientRect();
-    const side = matchMedia('(min-width: 900px)').matches;
-    viewer.setInsets(side ? r.right : 0, side ? 0 : window.innerHeight - r.top);
+    const covered = Math.max(0, window.innerHeight - panel.getBoundingClientRect().top);
+    document.documentElement.style.setProperty('--sheet-h', `${covered}px`);
+    viewer.setInsets(0, covered);
   };
   new ResizeObserver(layout).observe(document.body);
+  new ResizeObserver(layout).observe(panel);
 
   panel.hidden = false;
+  $('zoom').hidden = false;
   layout();
   render();
   viewer.select(sel);
@@ -252,6 +255,7 @@ function start(twin: Twin) {
   Promise.all(twin.zones.map((z) => viewer.showVariant(z.id, 'bestand')))
     .then(() => {
       notice.hidden = true;
+      viewer.drapeOnZones();
       void Promise.all([messung, viewer.terrainReady]).then(([m]) => m?.ready());
       announce(`${twin.title} geladen. ${describe(twin, sel)}`);
       for (const z of twin.zones) if (z.variants.neu) viewer.prefetch(z.variants.neu.file);
