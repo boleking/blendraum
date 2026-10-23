@@ -21,6 +21,7 @@ import {
   WebGLRenderer,
   type Object3D,
 } from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { Twin, VariantKey } from '../model/types';
@@ -65,6 +66,8 @@ export class Viewer {
   onFrame: ((now: number, moving: boolean) => void) | null = null;
   /** Für Dauermessungen: rendert jedes Bild, auch ohne Bewegung. */
   continuous = false;
+  /** Freier Modus (Arbeitsmodus): Orbit statt geführter Fahrt. */
+  private orbit: OrbitControls | null = null;
   /** Erfüllt, sobald das Gelände in der Szene ist (sofort, wenn das Paket keines hat). */
   readonly terrainReady: Promise<void>;
 
@@ -189,6 +192,70 @@ export class Viewer {
     this.camera.aspect = w / h;
     this.camera.setViewOffset(w, h, -this.insets.left / 2, this.insets.bottom / 2, w, h);
     this.requestFrame();
+  }
+
+  get free() {
+    return this.orbit !== null;
+  }
+
+  /**
+   * Freien Modus ein- oder ausschalten. Ein: Orbit übernimmt die aktuelle Kamera (Drehen, Schwenken,
+   * Zoomen mit Maus und Touch), die geführten Gesten pausieren. Aus: Kamera fährt zur zuletzt gewählten
+   * geführten Ansicht zurück.
+   */
+  setFree(on: boolean) {
+    if (on === this.free) return;
+    if (on) {
+      if (this.tween) {
+        this.state = this.tween.to;
+        this.tween = null;
+        this.busy(-1);
+      }
+      this.applyCamera();
+      const c = new OrbitControls(this.camera, this.canvas);
+      c.target.set(...this.state.target);
+      c.enableDamping = !this.reducedMotion;
+      c.dampingFactor = 0.1;
+      c.screenSpacePanning = false;
+      c.maxPolarAngle = Math.PI / 2 - 0.02; // nicht unter den Boden
+      c.minDistance = 2;
+      c.maxDistance = Math.max(50, this.state.frame * 6);
+      c.addEventListener('change', () => this.requestFrame());
+      c.update();
+      this.orbit = c;
+    } else {
+      this.orbit!.dispose();
+      this.orbit = null;
+      // Rückweg: vom freien Standpunkt sanft zurück in die geführte Ansicht
+      const from = this.stateFromCamera();
+      const to = this.state;
+      this.state = from;
+      const duration = this.reducedMotion ? 0 : 900;
+      if (!this.tween) this.busy(+1);
+      this.tween = { from, to, start: performance.now(), duration };
+    }
+    this.requestFrame();
+  }
+
+  /** Kamerastand als CamState (für den Rückweg aus dem freien Modus). */
+  private stateFromCamera(): CamState {
+    const t = this.orbit?.target ?? new Vector3(...this.state.target);
+    const p = this.camera.position;
+    const dx = p.x - t.x, dy = p.y - t.y, dz = p.z - t.z;
+    const d = Math.hypot(dx, dy, dz) || 1;
+    const h = this.canvas.clientHeight || 1;
+    const freeH = Math.max(1, h - this.insets.bottom);
+    const freeW = Math.max(1, (this.canvas.clientWidth || 1) - this.insets.left);
+    // frame so, dass applyCamera() denselben Abstand ergibt
+    const visible = 2 * d * Math.tan((this.camera.fov * Math.PI) / 360);
+    const frame = ((visible * Math.min(1, freeW / freeH)) * freeH) / h;
+    return {
+      target: [t.x, t.y, t.z],
+      fov: this.camera.fov,
+      azimuth: (Math.atan2(dx, dz) * 180) / Math.PI,
+      elevation: (Math.asin(Math.min(1, Math.max(-1, dy / d))) * 180) / Math.PI,
+      frame,
+    };
   }
 
   /** Fährt die Kamera zur Auswahl; ohne Animation bei reduzierter Bewegung. */
@@ -366,7 +433,12 @@ export class Viewer {
       else again = true;
     }
 
-    this.applyCamera();
+    if (this.orbit) {
+      // Im freien Modus steuert Orbit die Kamera; Dämpfung braucht weitere Bilder.
+      if (this.orbit.update()) again = true;
+    } else {
+      this.applyCamera();
+    }
     this.renderer.render(this.scene, this.camera);
     this.onFrame?.(now, again);
     if (again || this.continuous) this.requestFrame();

@@ -119,7 +119,22 @@ function start(twin: Twin) {
     $('live').textContent = text;
   }
 
+  // Freier Modus (Arbeitsmodus): Orbit statt geführter Fahrt; geführte Gesten pausieren.
+  const HINT = $('hint').textContent ?? '';
+  const freeBtn = $<HTMLButtonElement>('free');
+  function setFree(on: boolean) {
+    viewer.setFree(on);
+    freeBtn.setAttribute('aria-pressed', String(on));
+    document.body.dataset.free = String(on);
+    $('hint').textContent = on
+      ? 'Frei: Ziehen dreht, rechte Taste/zwei Finger schwenken, Rad/zwei Finger zoomen · F zurück'
+      : HINT;
+    announce(on ? 'Freie Bewegung an' : 'Freie Bewegung aus, zurück zur geführten Ansicht');
+  }
+  freeBtn.addEventListener('click', () => setFree(!viewer.free));
+
   function go(next: Selection) {
+    if (viewer.free) setFree(false); // ein geführter Sprung beendet den freien Modus
     const stageChanged = next.stage !== sel.stage;
     sel = next;
     viewer.select(sel);
@@ -152,7 +167,10 @@ function start(twin: Twin) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const k = e.key;
     let handled = true;
-    if (k === 'ArrowUp' || k === '+' || k === '=') go(zoom(twin, sel, 1));
+    if (k === 'f' || k === 'F') setFree(!viewer.free);
+    else if (viewer.free && k !== 'Escape') handled = false; // im freien Modus gehören die Tasten dem Orbit
+    else if (viewer.free && k === 'Escape') setFree(false);
+    else if (k === 'ArrowUp' || k === '+' || k === '=') go(zoom(twin, sel, 1));
     else if (k === 'ArrowDown' || k === '-' || k === 'Escape') go(zoom(twin, sel, -1));
     else if (k === 'ArrowLeft') go(cycle(twin, sel, -1));
     else if (k === 'ArrowRight') go(cycle(twin, sel, 1));
@@ -169,6 +187,7 @@ function start(twin: Twin) {
   canvas.addEventListener(
     'wheel',
     (e) => {
+      if (viewer.free) return; // Orbit zoomt selbst
       e.preventDefault();
       const now = performance.now();
       if (now < wheelLock) return;
@@ -191,6 +210,7 @@ function start(twin: Twin) {
     return Math.hypot(a.x - b.x, a.y - b.y);
   };
   canvas.addEventListener('pointerdown', (e) => {
+    if (viewer.free) return; // Orbit nimmt die Zeiger
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY });
     if (pointers.size === 1) gestureDone = false;
@@ -210,6 +230,7 @@ function start(twin: Twin) {
     }
   });
   const up = (e: PointerEvent) => {
+    if (viewer.free) return;
     const p = pointers.get(e.pointerId);
     pointers.delete(e.pointerId);
     if (!p || gestureDone || pointers.size > 0 || e.type === 'pointercancel') return;

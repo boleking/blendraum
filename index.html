@@ -28,6 +28,7 @@
     <div class="zoom" id="zoom" role="group" aria-label="Zoom" hidden>
       <button type="button" id="zoom-in" aria-label="Hineinzoomen">+</button>
       <button type="button" id="zoom-out" aria-label="Herauszoomen">−</button>
+      <button type="button" id="free" class="free" aria-pressed="false" aria-label="Freie Bewegung" title="Frei drehen, schwenken, zoomen (F)">Frei</button>
     </div>
 
     <section class="sheet" id="panel" aria-label="Steuerung" hidden>
@@ -46,7 +47,7 @@
 
       <div class="zones" id="zones" role="group" aria-label="Bereich wählen"></div>
 
-      <p class="hint">Pfeile, + / −, B / N · Wischen, Zwei-Finger-Zoom</p>
+      <p class="hint" id="hint">Pfeile, + / −, B / N · Wischen, Zwei-Finger-Zoom</p>
     </section>
 
     <div class="notice" id="notice" role="status">Lade Twin …</div>

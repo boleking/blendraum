@@ -170,6 +170,20 @@ button:disabled {
 .zoom button + button {
   border-top: 1px solid var(--line);
 }
+.zoom .free {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.zoom .free[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+/* Im freien Modus: Hinweis, dass die geführten Knöpfe ruhen */
+body[data-free='true'] .stages,
+body[data-free='true'] .where-row button {
+  opacity: 0.45;
+}
 
 /* Blatt unten: Ort, Ansicht, Bereiche */
 .sheet {
