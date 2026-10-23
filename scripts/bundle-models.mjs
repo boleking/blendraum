@@ -5,13 +5,14 @@ import { join, resolve } from 'node:path';
 
 const dir = resolve(process.argv[2] ?? 'dist-bundle');
 const twin = JSON.parse(readFileSync(join(dir, 'twin.json'), 'utf8'));
-// Gelände, Varianten und Geländeteile – wie modelFiles() in src/model/types.ts
+// Gelände, Varianten, Geländeteile und Detailfassungen – wie modelFiles() in src/model/types.ts
 const files = new Set();
 if (twin.terrain) files.add(twin.terrain.file);
 for (const zone of twin.zones) {
   for (const v of Object.values(zone.variants)) {
     files.add(v.file);
     if (v.terrainPatch) files.add(v.terrainPatch.file);
+    if (v.detail) files.add(v.detail.file);
   }
 }
 const bundle = {};

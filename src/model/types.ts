@@ -51,12 +51,18 @@ export interface Variant extends ModelFile {
   label: string;
   /** Ersetzt beim Umschalten den Geländeteil der Zone (z. B. Baugrube). Wird erst später dargestellt. */
   terrainPatch?: ModelFile;
+  /** Dichtere Fassung derselben Variante; wird geladen, sobald man in die Zone zoomt. */
+  detail?: ModelFile;
 }
 
 export interface Zone {
   id: string;
   label: string;
-  /** Grundriss als Polygon (x, z), mindestens drei Punkte */
+  /** Kurzname für den Zonen-Knopf (höchstens 14 Zeichen); sonst das Label ohne "Zone " */
+  short?: string;
+  /** ±0 der Zone in Web-Metern (Standard 0). Ebenen und Orte der Zone beziehen sich darauf – wichtig am Hang. */
+  base?: number;
+  /** Grundriss als Polygon (x, z), mindestens drei Punkte. Modelldateien der Zone liegen relativ zu `center`. */
   footprint: Vec2[];
   /** Aus dem Grundriss berechnet: Mitte der Bounding-Box (x, z) */
   center: Vec2;
@@ -107,6 +113,7 @@ export function modelFiles(twin: Twin): string[] {
       if (!v) continue;
       files.add(v.file);
       if (v.terrainPatch) files.add(v.terrainPatch.file);
+      if (v.detail) files.add(v.detail.file);
     }
   }
   return [...files];

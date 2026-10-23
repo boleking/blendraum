@@ -177,6 +177,30 @@ describe('validateTwin', () => {
     });
 
     it('verlangt placeholder als Wahrheitswert', () => rejects((t) => delete t.placeholder, /placeholder/));
+
+    it('akzeptiert Detailfassung, Kurzname und Zonen-±0', () => {
+      const t = realLike();
+      t.zones[0].variants.bestand.detail = { file: 'models/zone-a-detail.glb', source: { ...src } };
+      t.zones[0].short = 'Kern';
+      t.zones[0].base = 8.3;
+      const r = validateTwin(t);
+      if (!r.ok) throw new Error(r.errors.join('\n'));
+      expect(r.twin.zones[0].variants.bestand.detail?.file).toBe('models/zone-a-detail.glb');
+      expect(r.twin.zones[0].base).toBe(8.3);
+    });
+
+    it('prüft Detailfassung, Kurzname und Zonen-±0', () => {
+      const t = realLike();
+      t.zones[0].variants.bestand.detail = { file: 'https://x/y.glb' };
+      t.zones[0].short = 'ein viel zu langer Kurzname';
+      t.zones[0].base = 'hoch';
+      const r = validateTwin(t);
+      expect(r.ok).toBe(false);
+      if (!r.ok) {
+        const all = r.errors.join('\n');
+        for (const k of ['detail.file', 'detail.source', 'short', 'base']) expect(all).toContain(k);
+      }
+    });
   });
 
   it('wandelt Schema 1 (Teil A) in Schema 2 um', () => {

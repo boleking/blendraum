@@ -164,6 +164,8 @@ export function validateTwin(input: unknown): ValidationResult {
       if (!isObj(z)) return err(p, 'muss ein Objekt sein');
       const idOk = uniqueId(`${p}.id`, z.id);
       if (!isText(z.label)) err(`${p}.label`, 'fehlt');
+      if (z.short !== undefined && (!isText(z.short) || z.short.length > 14)) err(`${p}.short`, 'höchstens 14 Zeichen');
+      if (z.base !== undefined && !isNum(z.base)) err(`${p}.base`, 'muss eine Zahl sein');
       if ('center' in z || 'size' in z) err(p, 'center/size werden aus footprint berechnet – nicht angeben');
       const fp = z.footprint;
       const fpOk = Array.isArray(fp) && fp.length >= 3 && fp.every((pt) => isVec(pt, 2));
@@ -179,6 +181,7 @@ export function validateTwin(input: unknown): ValidationResult {
           if (mf && isObj(v)) {
             if (!isText(v.label)) err(`${vp}.label`, 'fehlt');
             if (v.terrainPatch !== undefined) modelFile(`${vp}.terrainPatch`, v.terrainPatch);
+            if (v.detail !== undefined) modelFile(`${vp}.detail`, v.detail);
           }
           return mf;
         };
