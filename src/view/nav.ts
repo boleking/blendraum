@@ -86,7 +86,7 @@ export function cameraFor(twin: Twin, sel: Selection): CamState {
   const lens = STAGE_LENS[sel.stage];
   if (sel.stage === 'resort') {
     const b = resortBounds(twin);
-    return { ...lens, target: [b.center[0], 2, b.center[2]], frame: b.size * 0.85 };
+    return { ...lens, target: [b.center[0], 2, b.center[2]], frame: b.size * 1.05 };
   }
   if (sel.stage === 'zone') {
     const z = twin.zones.find((x) => x.id === sel.zoneId)!;

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="description" content="Twin Test – Platzhalter-Viewer für ein Thermenresort. Keine echten Daten." />
+    <link rel="icon" href="data:," />
+    <title>Twin Test</title>
+  </head>
+  <body>
+    <canvas id="view" aria-label="3D-Ansicht des Platzhalter-Resorts" role="img"></canvas>
+
+    <header class="brand">
+      <h1>Twin Test</h1>
+      <p>Platzhalter · keine echten Daten</p>
+    </header>
+
+    <section class="panel" id="panel" aria-label="Steuerung" hidden>
+      <p class="where" id="where"></p>
+
+      <div class="stages" role="group" aria-label="Zoomstufe">
+        <button type="button" data-stage="resort">Resort</button>
+        <button type="button" data-stage="zone">Zone</button>
+        <button type="button" data-stage="ort">Ort</button>
+        <button type="button" data-stage="schritt" aria-label="Route-Schritt">
+          <span class="long">Route-Schritt</span><span class="short">Schritt</span>
+        </button>
+      </div>
+
+      <div class="row">
+        <button type="button" class="icon" id="prev" aria-label="Vorherige">‹</button>
+        <div class="zones" id="zones" role="group" aria-label="Zone wählen"></div>
+        <button type="button" class="icon" id="next" aria-label="Nächste">›</button>
+      </div>
+
+      <div class="row">
+        <span class="scope" id="scope"></span>
+        <div class="variant" role="group" aria-labelledby="scope">
+          <button type="button" data-variant="bestand">Bestand</button>
+          <button type="button" data-variant="neu">Neu</button>
+        </div>
+      </div>
+
+      <div class="row zoom">
+        <button type="button" class="icon" id="zoom-out" aria-label="Herauszoomen">−</button>
+        <p class="hint" id="hint">Pfeile, + / −, B / N · Wischen, Zwei-Finger-Zoom</p>
+        <button type="button" class="icon" id="zoom-in" aria-label="Hineinzoomen">+</button>
+      </div>
+    </section>
+
+    <div class="notice" id="notice" role="status">Lade Twin …</div>
+    <p class="sr-only" id="live" aria-live="polite"></p>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
