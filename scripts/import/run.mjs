@@ -1,5 +1,6 @@
 // Import echter Daten in ein lokales Paket unter data/ (Gelände, Bestand je Zone, Detailfassungen).
-// Aufruf: node scripts/import/run.mjs <import.json>
+// Aufruf: node scripts/import/run.mjs <import.json> [--nur-passpunkte]
+//   --nur-passpunkte: nur die Einpassung fremder Modelle (zones[].kiri) prüfen, nichts lesen oder schreiben
 // Die Konfiguration (Pfade, Nullpunkte, Zonen) liegt im privaten Daten-Repo, nie hier.
 // Ausgabe: <out>/twin.json, <out>/models/*.glb, <out>/import-report.json
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -8,8 +9,10 @@ import { fileURLToPath } from 'node:url';
 import { fromArrayBuffer } from 'geotiff';
 import sharp from 'sharp';
 import { meshDocument, optimizeToGlb } from './glb.mjs';
+import { bakeTransforms, clipToFootprint, makeUnlit, readModel, shrinkTextures } from './kiri-model.mjs';
 import { parseObj } from './obj.mjs';
 import { coverageMask, gridIndices, sampleRaster, sinkCovered, terrainExtent, terrainGrid } from './terrain.mjs';
+import { placeReport, similarityMatrix } from './place.mjs';
 import { boundsFootprint, compactMesh, footprintCenter, inside, splitByZones } from './zones.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -39,6 +42,51 @@ export function modeOf(values, bin) {
   return (best + 0.5) * bin;
 }
 
+/**
+ * Passpunkte eines fremden Modells aus der Konfiguration in Web-Meter.
+ * Je Punkt: `src` (Koordinaten im fremden Modell, so wie es exportiert wurde) und genau ein Ziel:
+ * `utm` [E, N, H], `bestandObj` [x, y, z] in cm wie in der Bestands-OBJ (inkl. senkrechtem Versatz)
+ * oder `web` [x, y, z].
+ * `srcFrame`: "gltf" (Standard: wie in der Datei, y oben) oder "blender" (Blender zeigt glTF mit z oben:
+ * Blender (x, y, z) = glTF (x, −z, y)).
+ */
+export function passPointsFromConfig(cfg, list = [], srcFrame = 'gltf') {
+  if (!['gltf', 'blender'].includes(srcFrame)) throw new Error(`srcFrame ist gltf oder blender (ist ${srcFrame})`);
+  const toGltf = srcFrame === 'blender' ? ([x, y, z]) => [x, z, -y] : (p) => p;
+  const o = cfg.webOrigin;
+  if (!o) throw new Error('Passpunkte brauchen einen festen webOrigin in der Konfiguration');
+  const dz = cfg.bestand?.offset?.dz ?? 0;
+  return list.map((p, i) => {
+    const id = p.id ?? `P${i + 1}`;
+    const targets = ['utm', 'bestandObj', 'web'].filter((k) => p[k]);
+    if (targets.length !== 1) throw new Error(`Passpunkt ${id}: genau eines von utm, bestandObj, web angeben`);
+    let dst;
+    if (p.utm) dst = [p.utm[0] - o.e, p.utm[2] - o.h, -(p.utm[1] - o.n)];
+    else if (p.bestandObj) {
+      const [x, y, z] = p.bestandObj;
+      dst = [x / 100 + cfg.sourceOrigin.e - o.e, z / 100 + dz - o.h, -(y / 100 + cfg.sourceOrigin.n - o.n)];
+    } else dst = p.web;
+    if (!Array.isArray(p.src) || p.src.length !== 3) throw new Error(`Passpunkt ${id}: src fehlt`);
+    return { id, src: toGltf(p.src), dst };
+  });
+}
+
+/** Einpassung prüfen; bricht ab ohne Prüfpunkt oder über der Fehlergrenze (Standard 2 m wie S1). */
+export function checkPlacement(cfg, zoneId, k) {
+  const pass = passPointsFromConfig(cfg, k.passpoints, k.srcFrame);
+  const check = passPointsFromConfig(cfg, k.checkpoints, k.srcFrame);
+  if (!check.length) throw new Error(`Zone ${zoneId}: mindestens ein Prüfpunkt (checkpoints) nötig – unabhängiger Nachweis der Lage`);
+  const r = placeReport(pass, check);
+  const limit = k.maxError ?? 2;
+  const f = (v) => v.toFixed(2);
+  log(`Zone ${zoneId}: Einpassung Maßstab ${r.scale.toFixed(5)}, Drehung ${r.yawDeg.toFixed(1)}°, Neigung ${r.tiltDeg.toFixed(1)}°`);
+  for (const p of r.pass) log(`  Passpunkt ${p.id}: ${f(p.error)} m (Höhe ${f(p.dy)} m)`);
+  for (const p of r.check) log(`  Prüfpunkt ${p.id}: ${f(p.error)} m (Höhe ${f(p.dy)} m)`);
+  log(`  RMS Passpunkte ${f(r.passRms)} m, Prüfpunkte max. ${f(r.checkMax)} m (Grenze ${limit} m)`);
+  if (r.passRms > limit || r.checkMax > limit) throw new Error(`Zone ${zoneId}: Einpassung über der Grenze von ${limit} m – Passpunkte prüfen`);
+  return r;
+}
+
 async function readRaster(file) {
   const buf = readFileSync(file);
   const tiff = await fromArrayBuffer(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
@@ -61,9 +109,22 @@ async function textureJpeg(file, size, quality) {
 async function main() {
   const cfgPath = resolve(process.argv[2] ?? '');
   const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
+  if (process.argv.includes('--nur-passpunkte')) {
+    const zs = (cfg.zones ?? []).filter((z) => z.kiri);
+    if (!zs.length) throw new Error('keine Zone mit kiri in der Konfiguration');
+    for (const z of zs) checkPlacement(cfg, z.id, z.kiri);
+    log('Passpunkte in Ordnung – nichts gelesen, nichts geschrieben');
+    return;
+  }
   const out = resolve(ROOT, cfg.out);
   if (relative(join(ROOT, 'data'), out).startsWith('..')) throw new Error('out muss unter data/ liegen');
   if (!Array.isArray(cfg.zones) || !cfg.zones.length) throw new Error('zones fehlt in der Konfiguration');
+  // Fremdmodelle zuerst einpassen: schlechte Passpunkte brechen ab, bevor etwas geschrieben wird
+  const placements = new Map();
+  for (const z of cfg.zones.filter((zz) => zz.kiri)) {
+    if (!cfg.webOrigin) throw new Error('Fremdmodelle brauchen einen festen webOrigin – zuerst einmal ohne kiri importieren');
+    placements.set(z.id, checkPlacement(cfg, z.id, z.kiri));
+  }
   mkdirSync(join(out, 'models'), { recursive: true });
   const report = { date: today(), zones: {} };
   const sizes = {};
@@ -171,6 +232,35 @@ async function main() {
       variant.detail = { file: dfile, source: src(zc.detail.obj, det.triangles, zc.detail.textureSize) };
       report.zones[zc.id].detail = { triangles: det.triangles, trianglesInZone: d.indices.length / 3, MB: r2(mb(det.glb.length)) };
       log(`Zone ${zc.id}: Detail ${d.indices.length / 3} → ${det.triangles} Dreiecke, Textur ${zc.detail.textureSize} px, ${mb(det.glb.length).toFixed(2)} MB`);
+    }
+
+    // 4c. Fremdmodell (z. B. KIRI): einpassen, zuschneiden, als Detail oder als Bestand der Zone
+    if (zc.kiri) {
+      const k = zc.kiri;
+      const use = k.use ?? 'detail';
+      if (!['detail', 'bestand'].includes(use)) throw new Error(`Zone ${zc.id}: kiri.use ist detail oder bestand`);
+      if (!zc.polygon) throw new Error(`Zone ${zc.id}: Fremdmodell nur mit Grundriss-Polygon`);
+      if (use === 'detail' && zc.detail) throw new Error(`Zone ${zc.id}: entweder detail oder kiri mit use "detail"`);
+      const placed = placements.get(zc.id);
+      log(`Zone ${zc.id}: lese Fremdmodell ${basename(k.file)}`);
+      const doc = await readModel(k.file);
+      bakeTransforms(doc, similarityMatrix(placed.fit));
+      const clip = await clipToFootprint(doc, footprint, center);
+      makeUnlit(doc);
+      const size = k.textureSize ?? 4096;
+      await shrinkTextures(doc, size, k.quality ?? 80);
+      const res = await optimizeToGlb(doc, { targetTriangles: k.triangles ?? 250000 });
+      const kfile = `models/${zc.id}-${use === 'detail' ? 'detail' : 'bestand'}-kiri.glb`;
+      write(kfile, res.glb);
+      const ksrc = src(k.file, res.triangles, size);
+      if (use === 'detail') variant.detail = { file: kfile, source: ksrc };
+      else Object.assign(variant, { file: kfile, source: ksrc });
+      report.zones[zc.id].kiri = {
+        use, file: basename(k.file), trianglesIn: clip.trianglesIn, trianglesInZone: clip.trianglesKept, triangles: res.triangles,
+        MB: r2(mb(res.glb.length)), scale: placed.scale, yawDeg: r2(placed.yawDeg), tiltDeg: r2(placed.tiltDeg),
+        passRms: r2(placed.passRms), check: placed.check.map((c) => ({ id: c.id, error: r2(c.error), dy: r2(c.dy) })),
+      };
+      log(`Zone ${zc.id}: Fremdmodell ${clip.trianglesKept} von ${clip.trianglesIn} Dreiecken im Grundriss → ${res.triangles}, ${mb(res.glb.length).toFixed(2)} MB (${use})`);
     }
 
     // Technischer Blickpunkt in der Zonenmitte, 1,5 m über dem Gelände (relativ zum ±0 der Zone)
