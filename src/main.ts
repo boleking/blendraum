@@ -53,6 +53,14 @@ function start(twin: Twin) {
   const canvas = $<HTMLCanvasElement>('view');
   const panel = $('panel');
   const viewer = new Viewer(canvas, twin, base, import.meta.env.VITE_MODEL_BUNDLE ? bundledModels() : undefined);
+  viewer.onError = showError;
+
+  // Kopfzeile folgt dem Paket: Platzhalter oder interner Arbeitsstand.
+  $('brand-title').textContent = twin.title;
+  document.title = twin.title;
+  $('brand-sub').textContent = twin.placeholder ? 'Platzhalter · keine echten Daten' : 'Interner Arbeitsstand · nicht weitergeben';
+  canvas.setAttribute('aria-label', `3D-Ansicht: ${twin.title}`);
+  const hasNeu = (z: Twin['zones'][number]) => !!z.variants.neu;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const syncMotion = () => (viewer.reducedMotion = motion.matches);
   syncMotion();
@@ -83,12 +91,16 @@ function start(twin: Twin) {
     twin.zones.forEach((z, i) => {
       chips[i].setAttribute('aria-pressed', String(z.id === sel.zoneId));
       chips[i].dataset.neu = String(variants[z.id] === 'neu');
-      chips[i].setAttribute('aria-label', `${z.label}, ${z.variants[variants[z.id]].label}`);
+      chips[i].setAttribute('aria-label', `${z.label}, ${z.variants[variants[z.id]]!.label}`);
     });
     const all = sel.stage === 'resort';
     $('scope').textContent = all ? 'Alle Zonen' : zone.label;
     const shown = all ? new Set(Object.values(variants)) : new Set([variants[zone.id]]);
     for (const b of variantButtons) b.setAttribute('aria-pressed', String(shown.size === 1 && shown.has(b.dataset.variant as VariantKey)));
+    // Ohne Entwurf gibt es nichts umzuschalten.
+    const neuButton = variantButtons.find((b) => b.dataset.variant === 'neu')!;
+    neuButton.disabled = all ? !twin.zones.some(hasNeu) : !hasNeu(zone);
+    neuButton.title = neuButton.disabled ? 'Für diese Zone gibt es keinen Entwurf' : '';
     $<HTMLButtonElement>('zoom-in').disabled = sel.stage === 'schritt';
     $<HTMLButtonElement>('zoom-out').disabled = sel.stage === 'resort';
     const what = { resort: 'Zone', zone: 'Zone', ort: 'Ort', schritt: 'Schritt' }[sel.stage];
@@ -109,7 +121,9 @@ function start(twin: Twin) {
   }
 
   function setVariant(v: VariantKey) {
-    const targets = sel.stage === 'resort' ? twin.zones : twin.zones.filter((z) => z.id === sel.zoneId);
+    const scope = sel.stage === 'resort' ? twin.zones : twin.zones.filter((z) => z.id === sel.zoneId);
+    const targets = scope.filter((z) => z.variants[v]);
+    if (targets.length === 0) return;
     for (const z of targets) {
       if (variants[z.id] === v) continue;
       variants[z.id] = v;
@@ -218,7 +232,7 @@ function start(twin: Twin) {
     .then(() => {
       notice.hidden = true;
       announce(`${twin.title} geladen. ${describe(twin, sel)}`);
-      for (const z of twin.zones) viewer.prefetch(z.variants.neu.file);
+      for (const z of twin.zones) if (z.variants.neu) viewer.prefetch(z.variants.neu.file);
     })
     .catch(showError);
   notice.textContent = 'Lade Modelle …';

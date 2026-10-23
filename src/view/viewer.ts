@@ -56,6 +56,7 @@ export class Viewer {
   private frameQueued = false;
   reducedMotion = false;
   onBusyChange: (busy: boolean) => void = () => {};
+  onError: (e: unknown) => void = () => {};
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -95,6 +96,21 @@ export class Viewer {
     ground.position.set(b.center[0], -0.01, b.center[2]);
     ground.receiveShadow = true;
     this.scene.add(ground);
+
+    // Gelände (nur in Paketen, die eines mitbringen) liegt unter allen Zonen.
+    if (twin.terrain) {
+      const file = twin.terrain.file;
+      this.busy(+1);
+      this.load(file)
+        .then((model) => {
+          const terrain = model.clone();
+          terrain.name = 'terrain';
+          this.scene.add(terrain);
+          this.requestFrame();
+        })
+        .catch((e) => this.onError(e))
+        .finally(() => this.busy(-1));
+    }
 
     for (const zone of twin.zones) {
       const holder = new Group();
@@ -166,11 +182,13 @@ export class Viewer {
 
   /** Lädt (einmalig) und zeigt eine Variante. Spätere Aufrufe gewinnen gegen langsamere frühere. */
   async showVariant(zoneId: string, variant: VariantKey): Promise<void> {
-    this.requested.set(zoneId, variant);
     const zone = this.twin.zones.find((z) => z.id === zoneId)!;
+    const v = zone.variants[variant];
+    if (!v) return; // Zone ohne Entwurf: Bestand bleibt stehen
+    this.requested.set(zoneId, variant);
     this.busy(+1);
     try {
-      const model = await this.load(zone.variants[variant].file);
+      const model = await this.load(v.file);
       if (this.requested.get(zoneId) !== variant) return;
       const holder = this.holders.get(zoneId)!;
       holder.clear();
