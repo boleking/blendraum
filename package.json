@@ -9,6 +9,7 @@
     "dev": "npm run models && vite",
     "check:public": "node scripts/check-public.mjs",
     "import": "node scripts/import/run.mjs",
+    "standalone": "node scripts/import/standalone.mjs",
     "build": "npm run check:public && npm run models && tsc --noEmit && vite build",
     "preview": "vite preview",
     "build:bundle": "npm run check:public && npm run models && tsc --noEmit && VITE_MODEL_BUNDLE=1 vite build --outDir dist-bundle && node scripts/bundle-models.mjs dist-bundle",

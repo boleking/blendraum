@@ -96,6 +96,11 @@ export interface Twin {
   /** true nur im erfundenen Platzhalterpaket */
   placeholder: boolean;
   origin: Origin | null;
+  /**
+   * false: echte Daten ohne Lage im Projektsystem (z. B. ein Scan vor dem Einpassen) – dann ohne Nullpunkt.
+   * Fehlt das Feld, gilt: georeferenziert, sobald es ein echtes Paket ist.
+   */
+  georeferenced?: boolean;
   /** Gelände als eigene GLB, nicht Teil einer Zone */
   terrain?: ModelFile;
   levels: Level[];

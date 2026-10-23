@@ -75,12 +75,15 @@ export function validateTwin(input: unknown): ValidationResult {
   const placeholder = data.placeholder;
   if (typeof placeholder !== 'boolean') err('placeholder', 'muss true oder false sein');
   let origin: Origin | null = null;
+  const georef = data.georeferenced;
+  if (georef !== undefined && typeof georef !== 'boolean') err('georeferenced', 'muss true oder false sein');
   if (data.origin === null) {
-    if (placeholder === false) err('origin', 'echte Daten brauchen einen Nullpunkt');
+    if (placeholder === false && georef !== false) err('origin', 'echte Daten brauchen einen Nullpunkt (oder georeferenced: false)');
   } else if (!isObj(data.origin)) err('origin', 'muss ein Objekt oder null sein');
   else {
     const o = data.origin;
     if (placeholder === true) err('origin', 'das Platzhalterpaket darf keinen echten Nullpunkt haben');
+    if (georef === false) err('origin', 'georeferenced: false verträgt keinen Nullpunkt');
     if (!Number.isInteger(o.epsg) || (o.epsg as number) <= 0) err('origin.epsg', 'muss ein EPSG-Code sein');
     for (const k of ['e', 'n', 'h'] as const) if (!isNum(o[k])) err(`origin.${k}`, 'muss eine Zahl sein');
     if (!errors.some((e) => e.startsWith('origin'))) origin = { epsg: o.epsg as number, e: o.e as number, n: o.n as number, h: o.h as number };

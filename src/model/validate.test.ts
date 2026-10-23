@@ -142,6 +142,23 @@ describe('validateTwin', () => {
       if (!r.ok) expect(r.errors.join('\n')).toMatch(/brauchen einen Nullpunkt/);
     });
 
+    it('erlaubt echte Daten ohne Nullpunkt nur mit georeferenced: false, und dann ohne Nullpunkt', () => {
+      const t = realLike();
+      t.origin = null;
+      t.georeferenced = false;
+      const r = validateTwin(t);
+      if (!r.ok) throw new Error(r.errors.join('\n'));
+      expect(r.twin.georeferenced).toBe(false);
+      const u = realLike();
+      u.georeferenced = false;
+      const r2 = validateTwin(u);
+      expect(r2.ok).toBe(false);
+      if (!r2.ok) expect(r2.errors.join('\n')).toMatch(/verträgt keinen Nullpunkt/);
+      const w = realLike();
+      w.georeferenced = 'nein';
+      expect(validateTwin(w).ok).toBe(false);
+    });
+
     it('verbietet einen Nullpunkt im Platzhalterpaket', () =>
       rejects((t) => (t.origin = { ...origin }), /Platzhalterpaket darf keinen echten Nullpunkt/));
 

@@ -60,7 +60,11 @@ function start(twin: Twin) {
   // Kopfzeile folgt dem Paket: Platzhalter oder interner Arbeitsstand.
   $('brand-title').textContent = twin.title;
   document.title = twin.title;
-  $('brand-sub').textContent = twin.placeholder ? 'Platzhalter · keine echten Daten' : 'Interner Arbeitsstand · nicht weitergeben';
+  $('brand-sub').textContent = twin.placeholder
+    ? 'Platzhalter · keine echten Daten'
+    : twin.georeferenced === false
+      ? 'Interner Arbeitsstand · Lage nicht georeferenziert · nicht weitergeben'
+      : 'Interner Arbeitsstand · nicht weitergeben';
   canvas.setAttribute('aria-label', `3D-Ansicht: ${twin.title}`);
   const hasNeu = (z: Twin['zones'][number]) => !!z.variants.neu;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
