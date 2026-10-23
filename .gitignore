@@ -3,3 +3,6 @@ dist/
 public/models/
 *.log
 dist-bundle/
+# Echte Projektpakete (lokal erzeugt) und die lokale Marker-Liste – nie einchecken
+data/
+.real-data-markers
