@@ -1,0 +1,62 @@
+# Requests beim Laden und Bedienen (2026-10-23T15:03:25.514Z)
+# fremde Ursprünge: 0
+mobil	GET	http://127.0.0.1:4173/
+mobil	GET	http://127.0.0.1:4173/assets/index-kJBOSJNy.js
+mobil	GET	http://127.0.0.1:4173/assets/index-DdqnJUct.css
+mobil	GET	http://127.0.0.1:4173/twin.json
+mobil	GET	http://127.0.0.1:4173/models/zone-a-bestand.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-b-bestand.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-c-bestand.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-d-bestand.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-e-bestand.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-f-bestand.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-a-neu.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-b-neu.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-c-neu.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-d-neu.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-e-neu.glb
+mobil	GET	http://127.0.0.1:4173/models/zone-f-neu.glb
+desktop	GET	http://127.0.0.1:4173/
+desktop	GET	http://127.0.0.1:4173/assets/index-kJBOSJNy.js
+desktop	GET	http://127.0.0.1:4173/assets/index-DdqnJUct.css
+desktop	GET	http://127.0.0.1:4173/twin.json
+desktop	GET	http://127.0.0.1:4173/models/zone-a-bestand.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-b-bestand.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-c-bestand.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-d-bestand.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-e-bestand.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-f-bestand.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-a-neu.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-b-neu.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-c-neu.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-d-neu.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-e-neu.glb
+desktop	GET	http://127.0.0.1:4173/models/zone-f-neu.glb
+interaktion	GET	http://127.0.0.1:4173/
+interaktion	GET	http://127.0.0.1:4173/assets/index-kJBOSJNy.js
+interaktion	GET	http://127.0.0.1:4173/assets/index-DdqnJUct.css
+interaktion	GET	http://127.0.0.1:4173/twin.json
+interaktion	GET	http://127.0.0.1:4173/models/zone-a-bestand.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-b-bestand.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-c-bestand.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-d-bestand.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-e-bestand.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-f-bestand.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-a-neu.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-b-neu.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-c-neu.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-d-neu.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-e-neu.glb
+interaktion	GET	http://127.0.0.1:4173/models/zone-f-neu.glb
+
+# Konsolenfehler: 0
+
+# Bedienprüfung (prefers-reduced-motion: reduce, daher ohne Wartezeit)
+OK 	Taste ↑ zoomt hinein	→ "Zone A" (busy=false)
+OK 	Taste → nächste Zone	→ "Zone B" (busy=false)
+OK 	Taste 3 springt zu Ort	→ "Zone B · Ort B1" (busy=false)
+OK 	Wischen nach links: nächster Ort	→ "Zone B · Ort B2" (busy=false)
+OK 	Mausrad hinein: Route-Schritt	→ "Ort B2 · Schritt B2.1 (3/3)" (busy=false)
+OK 	Taste Escape zoomt hinaus	→ "Zone B · Ort B2" (busy=false)
+OK 	Taste N: Zone B auf Neu	→ "Zone B · Ort B2" (busy=false)
+OK 	Schalter zeigt Neu (aria-pressed=true)
