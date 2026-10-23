@@ -67,12 +67,14 @@ describe('Einzelmodell als Paket', () => {
     expect(z.short).toBe('Halle');
     // Grundriss zentriert, 40 × 30 m plus 0,5 m Rand
     expect(z.footprint).toEqual([[-20.5, 15.5], [20.5, 15.5], [20.5, -15.5], [-20.5, -15.5]]);
-    expect(z.base).toBeGreaterThan(0.5);
-    expect(z.base).toBeLessThan(2);
+    // Boden (5-%-Quantil, hier ≈ 1,0) auf ±0 gesetzt – sonst schaut die Übersicht ins Leere
+    expect(z.base).toBe(0);
     for (const f of [z.variants.bestand.file, z.variants.bestand.detail.file]) expect(existsSync(join(out, f))).toBe(true);
     expect(z.variants.bestand.source.triangles).toBeLessThanOrEqual(z.variants.bestand.detail.source.triangles);
     const report = JSON.parse(readFileSync(join(out, 'import-report.json'), 'utf8'));
     expect(report.size).toMatchObject({ width: 40, depth: 30 });
+    expect(report.size.groundInSource).toBeGreaterThan(0.5);
+    expect(report.size.groundInSource).toBeLessThan(2);
   }, 60000);
 
   it('überschreibt nie ein vorhandenes Paket', async () => {

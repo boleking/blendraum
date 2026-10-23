@@ -3,7 +3,7 @@
 //
 //   node scripts/import/standalone.mjs <modell> --out data/<paket> --title "<Titel>" --zone "<Zonenname>"
 //        [--short <Kurzname>] [--up y|z] [--scale 1]
-//        [--triangles 120000] [--texture 2048] [--detail-triangles 400000] [--detail-texture 4096]
+//        [--triangles 120000] [--texture 2048] [--detail-triangles 250000] [--detail-texture 4096]
 //        [--budget 5] [--zone-budget 5]
 //
 // Schreibt <out>/twin.json (georeferenced: false, ohne Nullpunkt), models/<zone>-bestand.glb (leicht, Übersicht),
@@ -13,7 +13,7 @@ import { basename, dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { optimizeToGlb } from './glb.mjs';
-import { bakeTransforms, clipToFootprint, makeUnlit, readModel, shrinkTextures } from './kiri-model.mjs';
+import { bakeTransforms, clipToFootprint, makeUnlit, mat4Mul, readModel, shrinkTextures } from './kiri-model.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const CODE_MB = 0.17; // three.js + Viewer, gzip (Bericht S0)
@@ -74,7 +74,7 @@ export async function main(argv) {
       out: { type: 'string' }, title: { type: 'string' }, zone: { type: 'string' }, short: { type: 'string' },
       up: { type: 'string', default: 'y' }, scale: { type: 'string', default: '1' },
       triangles: { type: 'string', default: '120000' }, texture: { type: 'string', default: '2048' },
-      'detail-triangles': { type: 'string', default: '400000' }, 'detail-texture': { type: 'string', default: '4096' },
+      'detail-triangles': { type: 'string', default: '250000' }, 'detail-texture': { type: 'string', default: '4096' },
       budget: { type: 'string', default: '5' }, 'zone-budget': { type: 'string', default: '5' },
     },
   });
@@ -91,14 +91,18 @@ export async function main(argv) {
   // Maße einmal bestimmen, damit leichte und Detailfassung genau übereinanderliegen
   const probe = await readModel(file);
   bakeTransforms(probe, m);
-  const box = measure(probe);
+  const raw = measure(probe);
+  // Ohne Georeferenz bedeutet die absolute Höhe nichts: Boden auf ±0 legen, sonst schaut die Übersicht ins Leere.
+  const lift = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -raw.ground, 0, 1];
+  const placed = mat4Mul(lift, m);
+  const box = { ...raw, ground: 0 };
   const w = box.x1 - box.x0;
   const d = box.z1 - box.z0;
-  log(`Modell ${basename(file)}: ${w.toFixed(1)} × ${d.toFixed(1)} Einheiten, Boden ≈ ${box.ground.toFixed(2)}`);
+  log(`Modell ${basename(file)}: ${w.toFixed(1)} × ${d.toFixed(1)} Einheiten, Boden ≈ ${raw.ground.toFixed(2)} → auf ±0 gesetzt`);
   if (w < 5 || d < 5) log('Achtung: kleiner als 5 m – stimmt der Maßstab (--scale)?');
 
-  const light = await version(file, m, box, { triangles: +o.triangles, texture: +o.texture, quality: 80 });
-  const detail = await version(file, m, box, { triangles: +o['detail-triangles'], texture: +o['detail-texture'], quality: 80 });
+  const light = await version(file, placed, box, { triangles: +o.triangles, texture: +o.texture, quality: 80 });
+  const detail = await version(file, placed, box, { triangles: +o['detail-triangles'], texture: +o['detail-texture'], quality: 80 });
 
   mkdirSync(join(out, 'models'), { recursive: true });
   const lightFile = `models/${zoneId}-bestand.glb`;
@@ -135,7 +139,7 @@ export async function main(argv) {
   const zoneMB = mb(detail.glb.length);
   const report = {
     date: today, source: basename(file), up: o.up, scale: +o.scale, georeferenced: false,
-    size: { width: r2(w), depth: r2(d), ground: base },
+    size: { width: r2(w), depth: r2(d), groundInSource: r2(raw.ground), loweredBy: r2(raw.ground) },
     light: { triangles: light.triangles, trianglesBefore: light.trianglesBefore, MB: r2(mb(light.glb.length)) },
     detail: { triangles: detail.triangles, MB: r2(zoneMB) },
     budget: { initialMB: r2(initial), limitMB: +o.budget, zoneMB: r2(zoneMB), zoneLimitMB: +o['zone-budget'], codeMB: CODE_MB },

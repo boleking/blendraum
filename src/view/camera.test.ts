@@ -123,7 +123,8 @@ describe('Große Zonen und Zonen-±0', () => {
 
   it('Zonen-Ausschnitt wächst mit der Zone, kleine Zonen bleiben bei 34 m', () => {
     const s = setStage(big, initialSelection(big), 'zone');
-    expect(cameraFor(big, s).frame).toBeCloseTo(Math.hypot(140, 110) * 0.9);
+    // volle Diagonale wie die Übersicht: mit 0,9 ragte eine große Zone im Hochformat über den Rand (UX1-Probe)
+    expect(cameraFor(big, s).frame).toBeCloseTo(Math.hypot(140, 110));
     expect(cameraFor(twin, setStage(twin, initialSelection(twin), 'zone')).frame).toBe(34);
   });
 
