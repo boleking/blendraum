@@ -2,3 +2,4 @@ node_modules/
 dist/
 public/models/
 *.log
+dist-bundle/

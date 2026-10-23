@@ -21,6 +21,23 @@ async function loadTwin(): Promise<Twin> {
   return result.twin;
 }
 
+/**
+ * Vorschau-Build: alle GLBs stecken Base64-kodiert in models.json, weil manche Hosts keine
+ * .glb-Dateien ausliefern. Die Pfade aus twin.json bleiben die Schlüssel.
+ */
+function bundledModels(): (file: string) => Promise<ArrayBuffer> {
+  let bundle: Promise<Record<string, string>> | undefined;
+  return async (file) => {
+    bundle ??= fetch(`${base}models.json`).then((r) => {
+      if (!r.ok) throw new Error(`models.json nicht erreichbar (HTTP ${r.status})`);
+      return r.json();
+    });
+    const b64 = (await bundle)[file];
+    if (!b64) throw new Error(`Modell fehlt im Bündel: ${file}`);
+    return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)).buffer;
+  };
+}
+
 function showError(e: unknown) {
   const err = e as Error & { details?: string[] };
   notice.textContent = err.message || 'Unbekannter Fehler';
@@ -35,7 +52,7 @@ function showError(e: unknown) {
 function start(twin: Twin) {
   const canvas = $<HTMLCanvasElement>('view');
   const panel = $('panel');
-  const viewer = new Viewer(canvas, twin, base);
+  const viewer = new Viewer(canvas, twin, base, import.meta.env.VITE_MODEL_BUNDLE ? bundledModels() : undefined);
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const syncMotion = () => (viewer.reducedMotion = motion.matches);
   syncMotion();

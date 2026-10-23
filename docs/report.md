@@ -51,12 +51,19 @@ Die alte, ungenutzte Datei `blendraum_website.html` wurde auf diesem Branch entf
 - In der Schritt-Stufe verdeckt die mobile Leiste viel; ggf. einklappbar machen.
 - `public/models/` wird beim Build erzeugt und ist nicht eingecheckt.
 
+## Vorschau-Link
+
+Private Vorschau auf claude.ai (nur für den Account-Inhaber sichtbar): https://claude.ai/artifact/Y6gpnHmeazBNBVJ7NRSuMd
+
+Der Host liefert keine `.glb`-Dateien aus. Deshalb gibt es den Build `npm run build:bundle`: Er packt die 12 GLBs Base64-kodiert in `models.json` (119 KB). Die Pfade aus `twin.json` bleiben die Schlüssel, der Viewer lädt sie dann aus dem Bündel statt einzeln. Der normale Build lädt weiterhin Einzeldateien. Die eigene CSP ist in der Vorschau entfernt; dort gilt die CSP des Hosts.
+
 ## Befehle
 
 ```sh
 npm install
 npm run dev      # Modelle erzeugen + Dev-Server
 npm run build    # Modelle + Typprüfung + Build nach dist/
+npm run build:bundle  # wie build, Modelle gebündelt in models.json, nach dist-bundle/
 npm test         # Vitest
 npm run shots    # nach build: Screenshots + Netzwerkprotokoll (braucht Chromium)
 ```

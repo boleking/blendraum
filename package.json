@@ -9,6 +9,7 @@
     "dev": "npm run models && vite",
     "build": "npm run models && tsc --noEmit && vite build",
     "preview": "vite preview",
+    "build:bundle": "npm run models && tsc --noEmit && VITE_MODEL_BUNDLE=1 vite build --outDir dist-bundle && node scripts/bundle-models.mjs dist-bundle",
     "test": "vitest run",
     "shots": "node scripts/shots.mjs"
   },

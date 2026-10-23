@@ -61,6 +61,8 @@ export class Viewer {
     private canvas: HTMLCanvasElement,
     private twin: Twin,
     private baseUrl: string,
+    /** Optional: Modelldaten aus einer anderen Quelle als einzelnen GLB-Dateien (z. B. Bündel). */
+    private source?: (file: string) => Promise<ArrayBuffer>,
   ) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.outputColorSpace = SRGBColorSpace;
@@ -189,7 +191,10 @@ export class Viewer {
   private load(file: string): Promise<Object3D> {
     let p = this.cache.get(file);
     if (!p) {
-      p = this.loader.loadAsync(this.baseUrl + file).then((gltf) => {
+      const gltfPromise = this.source
+        ? this.source(file).then((buf) => this.loader.parseAsync(buf, this.baseUrl))
+        : this.loader.loadAsync(this.baseUrl + file);
+      p = gltfPromise.then((gltf) => {
         gltf.scene.traverse((o) => {
           if (o instanceof Mesh) {
             const transparent = (o.material as MeshStandardMaterial).transparent;
