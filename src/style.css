@@ -342,7 +342,7 @@ button:disabled {
   max-width: 340px;
   margin-left: auto;
   padding: 10px 12px;
-  background: var(--panel);
+  background: var(--sheet);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   font-size: 12px;
