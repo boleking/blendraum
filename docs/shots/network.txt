@@ -1,8 +1,8 @@
-# Requests beim Laden und Bedienen (2026-10-23T16:16:39.405Z)
+# Requests beim Laden und Bedienen (2026-10-23T16:34:12.875Z)
 # fremde Ursprünge: 0
 mobil	GET	http://127.0.0.1:4173/
-mobil	GET	http://127.0.0.1:4173/assets/index-D6uGPa0Y.js
-mobil	GET	http://127.0.0.1:4173/assets/index-DdqnJUct.css
+mobil	GET	http://127.0.0.1:4173/assets/index-CUnLqbog.js
+mobil	GET	http://127.0.0.1:4173/assets/index-CG-JpKxu.css
 mobil	GET	http://127.0.0.1:4173/twin.json
 mobil	GET	http://127.0.0.1:4173/models/zone-a-bestand.glb
 mobil	GET	http://127.0.0.1:4173/models/zone-b-bestand.glb
@@ -17,8 +17,8 @@ mobil	GET	http://127.0.0.1:4173/models/zone-d-neu.glb
 mobil	GET	http://127.0.0.1:4173/models/zone-e-neu.glb
 mobil	GET	http://127.0.0.1:4173/models/zone-f-neu.glb
 desktop	GET	http://127.0.0.1:4173/
-desktop	GET	http://127.0.0.1:4173/assets/index-D6uGPa0Y.js
-desktop	GET	http://127.0.0.1:4173/assets/index-DdqnJUct.css
+desktop	GET	http://127.0.0.1:4173/assets/index-CUnLqbog.js
+desktop	GET	http://127.0.0.1:4173/assets/index-CG-JpKxu.css
 desktop	GET	http://127.0.0.1:4173/twin.json
 desktop	GET	http://127.0.0.1:4173/models/zone-a-bestand.glb
 desktop	GET	http://127.0.0.1:4173/models/zone-b-bestand.glb
@@ -33,8 +33,8 @@ desktop	GET	http://127.0.0.1:4173/models/zone-d-neu.glb
 desktop	GET	http://127.0.0.1:4173/models/zone-e-neu.glb
 desktop	GET	http://127.0.0.1:4173/models/zone-f-neu.glb
 interaktion	GET	http://127.0.0.1:4173/
-interaktion	GET	http://127.0.0.1:4173/assets/index-D6uGPa0Y.js
-interaktion	GET	http://127.0.0.1:4173/assets/index-DdqnJUct.css
+interaktion	GET	http://127.0.0.1:4173/assets/index-CUnLqbog.js
+interaktion	GET	http://127.0.0.1:4173/assets/index-CG-JpKxu.css
 interaktion	GET	http://127.0.0.1:4173/twin.json
 interaktion	GET	http://127.0.0.1:4173/models/zone-a-bestand.glb
 interaktion	GET	http://127.0.0.1:4173/models/zone-b-bestand.glb
