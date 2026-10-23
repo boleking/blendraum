@@ -4,6 +4,7 @@ import { meshDocument, optimizeToGlb, smoothNormals } from './glb.mjs';
 import { parseObj } from './obj.mjs';
 import { modeOf, quantile } from './run.mjs';
 import { coverageMask, gridIndices, sampleRaster, sinkCovered, terrainExtent, terrainGrid } from './terrain.mjs';
+import { boundsFootprint, compactMesh, footprintCenter, inside, splitByZones } from './zones.mjs';
 
 /** Kleines Raster: 4 × 3 Zellen à 2 m, Höhe = 10 + Spalte (Ost-Gefälle), linke Kante E 1000, obere Kante N 2006 */
 const raster = {
@@ -43,6 +44,46 @@ describe('OBJ', () => {
   });
 
   it('meldet Indizes außerhalb', () => expect(() => parseObj('v 0 0 0\nf 1 2 3')).toThrow(/außerhalb/));
+
+  it('filtert Flächen nach ihrem Mittelpunkt, ohne ungenutzte Vertices zu übernehmen', () => {
+    const m = parseObj(text, { keepFace: (cx) => cx > 40 }); // nur das Viereck (Mitte x ≈ 66,7), nicht das Dreieck (x ≈ 33)
+    expect(m.sourceFaces).toBe(2);
+    expect(m.indices.length).toBe(6);
+    expect(m.positions.length / 3).toBe(4);
+  });
+});
+
+describe('Zonen', () => {
+  // Zwei Dreiecke links (x < 0), eins rechts
+  const pos = [-10, 0, 0, -8, 0, 0, -9, 0, -2, -6, 1, 0, -4, 1, 0, -5, 1, -2, 6, 2, 0, 8, 2, 0, 7, 2, -2];
+  const idx = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  const left = [[-12, 1], [0, 1], [0, -3], [-12, -3]];
+
+  it('Punkt-in-Polygon', () => {
+    expect(inside(-5, -1, left)).toBe(true);
+    expect(inside(5, -1, left)).toBe(false);
+  });
+
+  it('teilt Dreiecke nach Mittelpunkt auf Polygon- und Rest-Zone', () => {
+    const parts = splitByZones(pos, idx, [{ id: 'links', polygon: left }, { id: 'rest', rest: true }]);
+    expect(parts.get('links')).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(parts.get('rest')).toEqual([6, 7, 8]);
+    expect(() => splitByZones(pos, idx, [{ id: 'a', rest: true }, { id: 'b', rest: true }])).toThrow(/Rest-Zone/);
+  });
+
+  it('verdichtet ein Stück und legt es relativ zur Zonenmitte', () => {
+    const uvs = Float32Array.from({ length: 18 }, (_, k) => k / 18);
+    const m = compactMesh(pos, uvs, [6, 7, 8], [7, -1]);
+    expect(Array.from(m.positions)).toEqual([-1, 2, 1, 1, 2, 1, 0, 2, -1]);
+    expect(Array.from(m.indices)).toEqual([0, 1, 2]);
+    expect(m.uvs.length).toBe(6);
+  });
+
+  it('Grundriss und Mitte aus der Bounding-Box', () => {
+    const fp = boundsFootprint(pos, [6, 7, 8]);
+    expect(fp).toEqual([[6, 0], [8, 0], [8, -2], [6, -2]]);
+    expect(footprintCenter(fp)).toEqual([7, -1]);
+  });
 });
 
 describe('Gelände', () => {

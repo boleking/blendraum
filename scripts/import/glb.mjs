@@ -70,7 +70,8 @@ export function triangleCount(doc) {
 /**
  * Optimiert und liefert die GLB-Bytes.
  * @param {Document} doc
- * @param {{ targetTriangles?: number }} [opts]
+ * @param {{ targetTriangles?: number, lockBorder?: boolean }} [opts]
+ *   lockBorder: offene Ränder nicht verschieben, damit benachbarte Stücke dicht bleiben
  */
 export async function optimizeToGlb(doc, opts = {}) {
   await MeshoptEncoder.ready;
@@ -78,7 +79,9 @@ export async function optimizeToGlb(doc, opts = {}) {
   await doc.transform(weld());
   const before = triangleCount(doc);
   if (opts.targetTriangles && before > opts.targetTriangles) {
-    await doc.transform(simplify({ simplifier: MeshoptSimplifier, ratio: opts.targetTriangles / before, error: 0.02 }));
+    await doc.transform(
+      simplify({ simplifier: MeshoptSimplifier, ratio: opts.targetTriangles / before, error: 0.02, lockBorder: !!opts.lockBorder }),
+    );
   }
   await doc.transform(reorder({ encoder: MeshoptEncoder }), quantize());
   doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
