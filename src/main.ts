@@ -229,10 +229,30 @@ function start(twin: Twin) {
   render();
   viewer.select(sel);
 
+  // Messanzeige nur mit #messen; eigener Chunk, sonst nicht geladen.
+  const messung = location.hash === '#messen' ? import('./messen').then((m) => m.mountMessung(messHost())) : null;
+  function messHost() {
+    // Zone mit Detailfassung bevorzugen, sonst die erste – dort zeigt sich das Nachladen.
+    const zone = twin.zones.find((z) => z.variants.bestand.detail) ?? twin.zones[0];
+    const at = (stage: Stage) => () => go(setStage(twin, selectZone(twin, sel, zone.id), stage));
+    return {
+      viewer,
+      title: twin.title,
+      isBusy: () => document.body.dataset.busy === 'true',
+      steps: [
+        { name: `Fahrt: ${zone.short ?? zone.label}`, run: at('zone') },
+        { name: 'Fahrt: Ort', run: at('ort') },
+        { name: 'Fahrt: zurück zur Zone', run: at('zone') },
+        { name: 'Fahrt: Resort', run: at('resort') },
+      ],
+    };
+  }
+
   // Bestand sofort, Neu danach im Hintergrund
   Promise.all(twin.zones.map((z) => viewer.showVariant(z.id, 'bestand')))
     .then(() => {
       notice.hidden = true;
+      void Promise.all([messung, viewer.terrainReady]).then(([m]) => m?.ready());
       announce(`${twin.title} geladen. ${describe(twin, sel)}`);
       for (const z of twin.zones) if (z.variants.neu) viewer.prefetch(z.variants.neu.file);
     })

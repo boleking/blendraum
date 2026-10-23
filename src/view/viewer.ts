@@ -61,6 +61,12 @@ export class Viewer {
   reducedMotion = false;
   onBusyChange: (busy: boolean) => void = () => {};
   onError: (e: unknown) => void = () => {};
+  /** Für die Messanzeige: nach jedem gerenderten Bild, mit Zeitstempel und ob die Kamera fährt. */
+  onFrame: ((now: number, moving: boolean) => void) | null = null;
+  /** Für Dauermessungen: rendert jedes Bild, auch ohne Bewegung. */
+  continuous = false;
+  /** Erfüllt, sobald das Gelände in der Szene ist (sofort, wenn das Paket keines hat). */
+  readonly terrainReady: Promise<void>;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -109,6 +115,9 @@ export class Viewer {
     }
 
     // Gelände (nur in Paketen, die eines mitbringen) liegt unter allen Zonen.
+    let terrainDone = () => {};
+    this.terrainReady = new Promise((r) => (terrainDone = r));
+    if (!twin.terrain) terrainDone();
     if (twin.terrain) {
       const file = twin.terrain.file;
       this.busy(+1);
@@ -121,7 +130,10 @@ export class Viewer {
           this.requestFrame();
         })
         .catch((e) => this.onError(e))
-        .finally(() => this.busy(-1));
+        .finally(() => {
+          this.busy(-1);
+          terrainDone();
+        });
     }
 
     for (const zone of twin.zones) {
@@ -335,7 +347,20 @@ export class Viewer {
 
     this.applyCamera();
     this.renderer.render(this.scene, this.camera);
-    if (again) this.requestFrame();
+    this.onFrame?.(now, again);
+    if (again || this.continuous) this.requestFrame();
+  }
+
+  /** Kennzahlen des zuletzt gerenderten Bildes. */
+  stats() {
+    const { render, memory } = this.renderer.info;
+    return {
+      drawCalls: render.calls,
+      triangles: render.triangles,
+      geometries: memory.geometries,
+      textures: memory.textures,
+      pixelRatio: this.renderer.getPixelRatio(),
+    };
   }
 
   private applyCamera() {

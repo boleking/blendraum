@@ -219,3 +219,69 @@ button:disabled {
     display: none;
   }
 }
+
+/* Messanzeige (#messen) */
+.messen {
+  position: fixed;
+  top: max(64px, calc(env(safe-area-inset-top) + 52px));
+  left: 16px;
+  right: 16px;
+  max-width: 340px;
+  margin-left: auto;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.messen summary {
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 24px;
+}
+.messen[open] summary {
+  margin-bottom: 6px;
+}
+.messen > :not(summary) + :not(summary) {
+  margin-top: 6px;
+}
+.messen dl {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+.messen dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.messen dt {
+  color: var(--muted);
+}
+.messen dd {
+  margin: 0;
+  text-align: right;
+}
+.messen dd[data-urteil='knapp'] {
+  color: #8a5a00;
+}
+.messen dd[data-urteil='über'] {
+  color: #a3261b;
+  font-weight: 600;
+}
+.messen-knopf {
+  display: flex;
+  gap: 6px;
+}
+.messen-knopf button {
+  flex: 1;
+  min-height: 36px;
+  font-size: 12px;
+}
+.messen p {
+  margin: 0;
+  color: var(--muted);
+  min-height: 1.2em;
+}

@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "build:bundle": "npm run check:public && npm run models && tsc --noEmit && VITE_MODEL_BUNDLE=1 vite build --outDir dist-bundle && node scripts/bundle-models.mjs dist-bundle",
     "test": "vitest run",
-    "shots": "node scripts/shots.mjs"
+    "shots": "node scripts/shots.mjs",
+    "measure": "node scripts/measure.mjs"
   },
   "dependencies": {
     "three": "^0.186.1"
