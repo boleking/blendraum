@@ -76,3 +76,25 @@ export function cameraPosition(s: CamState, aspect: number): Vec3 {
     s.target[2] + d * Math.cos(az) * Math.cos(el),
   ];
 }
+
+/**
+ * Umkehrung von cameraPosition()/distanceFor(): Kamerastand aus Position und Zielpunkt.
+ * Das Seitenverhältnis und der sichtbare Anteil (h / freeH) müssen dieselben sein wie beim Hinweg.
+ */
+export function stateFromPose(pos: Vec3, target: Vec3, fov: number, aspect: number, visibleShare = 1): CamState {
+  const dx = pos[0] - target[0], dy = pos[1] - target[1], dz = pos[2] - target[2];
+  const d = Math.hypot(dx, dy, dz) || 1;
+  const visibleHeight = 2 * d * Math.tan((fov * Math.PI) / 360);
+  return {
+    target: [...target] as Vec3,
+    fov,
+    azimuth: (Math.atan2(dx, dz) * 180) / Math.PI,
+    elevation: (Math.asin(Math.min(1, Math.max(-1, dy / d))) * 180) / Math.PI,
+    frame: visibleHeight * Math.min(1, aspect) * visibleShare,
+  };
+}
+
+/** Clipping-Ebenen passend zum Abstand Kamera–Ziel: nah genug zum Heranzoomen, weit genug für das Resort. */
+export function clipPlanes(distance: number, sceneSize: number) {
+  return { near: Math.max(0.05, Math.min(distance * 0.05, 0.5)), far: Math.max(distance * 4, sceneSize * 3) + 200 };
+}

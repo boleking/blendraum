@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import type { Vec3 } from '../model/types';
 import { validateTwin } from '../model/validate';
 import {
   cameraPosition,
@@ -133,5 +134,42 @@ describe('Große Zonen und Zonen-±0', () => {
     expect(z.target[1]).toBe(10);
     const o = cameraFor(big, setStage(big, initialSelection(big), 'ort'));
     expect(o.target[1]).toBeCloseTo(8 + twin.places[0].position[1]);
+  });
+});
+
+describe('Rückweg aus dem freien Modus (Review F-1/F-2/F-4)', async () => {
+  const { cameraPosition, clipPlanes, stateFromPose } = await import('./camera-rig');
+
+  it('stateFromPose ist die exakte Umkehrung von cameraPosition, auch mit Blatt-Anteil', () => {
+    for (const [aspect, share] of [[1.6, 1], [390 / 844, 1], [390 / 844, 844 / 620], [1.6, 900 / 700]]) {
+      const s: CamState = { target: [12, -3, 40], fov: 28, azimuth: 123, elevation: 31, frame: 57 };
+      // applyCamera rechnet mit frame · (h/freeH); der Rückweg muss das wieder herausrechnen
+      const pos = cameraPosition({ ...s, frame: s.frame * share }, aspect);
+      const back = stateFromPose(pos, s.target, s.fov, aspect, 1 / share);
+      expect(back.frame).toBeCloseTo(s.frame, 6);
+      expect(back.azimuth).toBeCloseTo(s.azimuth, 6);
+      expect(back.elevation).toBeCloseTo(s.elevation, 6);
+      expect(back.target).toEqual(s.target);
+    }
+  });
+
+  it('nimmt das verschobene Ziel, nicht das alte (Schwenken im freien Modus)', () => {
+    const pos: Vec3 = [100, 50, 100];
+    const a = stateFromPose(pos, [0, 0, 0], 40, 1.6);
+    const b = stateFromPose(pos, [50, 0, 0], 40, 1.6);
+    expect(a.azimuth).toBeCloseTo(45, 6);
+    expect(b.azimuth).not.toBeCloseTo(45, 1);
+    expect(b.target).toEqual([50, 0, 0]);
+  });
+
+  it('Clipping folgt dem Abstand: nah genug für 2 m, weit genug für das Resort', () => {
+    // Übersicht eines 200-m-Resorts: Abstand ≈ 630 m
+    const far = clipPlanes(630, 200);
+    expect(far.near).toBeLessThanOrEqual(0.5);
+    expect(far.far).toBeGreaterThan(630 * 3);
+    // ganz nah herangezoomt: Near-Ebene darf nichts vor 0,1 m abschneiden
+    const near = clipPlanes(2, 200);
+    expect(near.near).toBeCloseTo(0.1, 6);
+    expect(near.far).toBeGreaterThanOrEqual(200 * 3);
   });
 });

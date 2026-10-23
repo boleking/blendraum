@@ -25,7 +25,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { Twin, VariantKey } from '../model/types';
-import { cameraPosition, easeInOutCubic, mixState, STAGES, type CamState, type Stage } from './camera-rig';
+import { cameraPosition, clipPlanes, easeInOutCubic, mixState, stateFromPose, STAGES, type CamState, type Stage } from './camera-rig';
 import { kelvinToRgb, WARM_KELVIN } from './light';
 import { cameraFor, placeWorld, resortBounds, type Selection } from './nav';
 
@@ -54,6 +54,8 @@ export class Viewer {
   /** Zonen, für die die Detailfassung angefordert ist */
   private detailed = new Set<string>();
   private sun: DirectionalLight;
+  /** Diagonale des Resorts (m), für Clipping und Zoomgrenzen */
+  private sceneSize: number;
   private state: CamState;
   private stage: Stage = 'resort';
   private tween: Tween | null = null;
@@ -95,6 +97,7 @@ export class Viewer {
     this.scene.add(new HemisphereLight(new Color(0xfff1dc), new Color(0x8a6f55), 1.6));
     this.sun = new DirectionalLight(warm, 3.2);
     const b = resortBounds(twin);
+    this.sceneSize = b.size;
     // Sonne und Schattenbereich wachsen mit dem Resort (Platzhalter ~100 m, echte Pakete mehrere 100 m).
     const s = Math.max(1, b.size / 150); // Platzhalter: 1, also unverändert
     this.sun.position.set(b.center[0] - 45 * s, 70 * s, b.center[2] + 30 * s);
@@ -218,16 +221,20 @@ export class Viewer {
       c.dampingFactor = 0.1;
       c.screenSpacePanning = false;
       c.maxPolarAngle = Math.PI / 2 - 0.02; // nicht unter den Boden
-      c.minDistance = 2;
-      c.maxDistance = Math.max(50, this.state.frame * 6);
+      c.minDistance = 8; // näher steckt die Kamera im Scan und sieht Rückseiten
+      // Nie unter den aktuellen Abstand klemmen (sonst springt die Kamera beim Einschalten, v. a. Hochformat);
+      // und aus einer engen Stufe trotzdem bis zum Überblick herauszoomen können.
+      const d0 = this.camera.position.distanceTo(c.target);
+      c.maxDistance = Math.max(d0 * 1.05, this.sceneSize * 3);
       c.addEventListener('change', () => this.requestFrame());
       c.update();
       this.orbit = c;
     } else {
+      // Rückweg: vom freien Standpunkt sanft zurück in die geführte Ansicht.
+      // Zustand lesen, solange das Orbit-Ziel noch da ist (Schwenken verschiebt es).
+      const from = this.stateFromCamera();
       this.orbit!.dispose();
       this.orbit = null;
-      // Rückweg: vom freien Standpunkt sanft zurück in die geführte Ansicht
-      const from = this.stateFromCamera();
       const to = this.state;
       this.state = from;
       const duration = this.reducedMotion ? 0 : 900;
@@ -241,21 +248,10 @@ export class Viewer {
   private stateFromCamera(): CamState {
     const t = this.orbit?.target ?? new Vector3(...this.state.target);
     const p = this.camera.position;
-    const dx = p.x - t.x, dy = p.y - t.y, dz = p.z - t.z;
-    const d = Math.hypot(dx, dy, dz) || 1;
     const h = this.canvas.clientHeight || 1;
     const freeH = Math.max(1, h - this.insets.bottom);
     const freeW = Math.max(1, (this.canvas.clientWidth || 1) - this.insets.left);
-    // frame so, dass applyCamera() denselben Abstand ergibt
-    const visible = 2 * d * Math.tan((this.camera.fov * Math.PI) / 360);
-    const frame = ((visible * Math.min(1, freeW / freeH)) * freeH) / h;
-    return {
-      target: [t.x, t.y, t.z],
-      fov: this.camera.fov,
-      azimuth: (Math.atan2(dx, dz) * 180) / Math.PI,
-      elevation: (Math.asin(Math.min(1, Math.max(-1, dy / d))) * 180) / Math.PI,
-      frame,
-    };
+    return stateFromPose([p.x, p.y, p.z], [t.x, t.y, t.z], this.camera.fov, freeW / freeH, freeH / h);
   }
 
   /** Fährt die Kamera zur Auswahl; ohne Animation bei reduzierter Bewegung. */
@@ -436,6 +432,13 @@ export class Viewer {
     if (this.orbit) {
       // Im freien Modus steuert Orbit die Kamera; Dämpfung braucht weitere Bilder.
       if (this.orbit.update()) again = true;
+      // Clipping dem Abstand nachführen, sonst schneidet die Near-Ebene beim Heranzoomen die Szene weg.
+      const { near, far } = clipPlanes(this.camera.position.distanceTo(this.orbit.target), this.sceneSize);
+      if (near !== this.camera.near || far !== this.camera.far) {
+        this.camera.near = near;
+        this.camera.far = far;
+        this.camera.updateProjectionMatrix();
+      }
     } else {
       this.applyCamera();
     }

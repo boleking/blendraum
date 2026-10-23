@@ -123,6 +123,12 @@ function start(twin: Twin) {
   const HINT = $('hint').textContent ?? '';
   const freeBtn = $<HTMLButtonElement>('free');
   function setFree(on: boolean) {
+    if (on) {
+      // laufende geführte Geste abbrechen, Zeiger-Tabelle leeren
+      pointers.clear();
+      pinch0 = 0;
+      gestureDone = true;
+    }
     viewer.setFree(on);
     freeBtn.setAttribute('aria-pressed', String(on));
     document.body.dataset.free = String(on);
@@ -217,6 +223,7 @@ function start(twin: Twin) {
     if (pointers.size === 2) pinch0 = spread();
   });
   canvas.addEventListener('pointermove', (e) => {
+    if (viewer.free) return; // Orbit nimmt die Zeiger
     const p = pointers.get(e.pointerId);
     if (!p || gestureDone) return;
     p.x = e.clientX;
@@ -230,9 +237,10 @@ function start(twin: Twin) {
     }
   });
   const up = (e: PointerEvent) => {
-    if (viewer.free) return;
+    // Erst austragen, dann prüfen: ein Finger, der im freien Modus losgelassen wird, darf nicht liegen bleiben.
     const p = pointers.get(e.pointerId);
     pointers.delete(e.pointerId);
+    if (viewer.free) return;
     if (!p || gestureDone || pointers.size > 0 || e.type === 'pointercancel') return;
     const dx = p.x - p.x0;
     const dy = p.y - p.y0;
