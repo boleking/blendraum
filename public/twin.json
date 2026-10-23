@@ -1,0 +1,474 @@
+{
+  "schema": 1,
+  "title": "Twin Test",
+  "levels": [
+    {
+      "id": "UG",
+      "label": "Untergeschoss",
+      "elevation": -3.5,
+      "height": 3.5
+    },
+    {
+      "id": "EG",
+      "label": "Erdgeschoss",
+      "elevation": 0,
+      "height": 4
+    },
+    {
+      "id": "OG1",
+      "label": "1. Obergeschoss",
+      "elevation": 4,
+      "height": 3.5
+    }
+  ],
+  "zones": [
+    {
+      "id": "zone-a",
+      "label": "Zone A",
+      "center": [
+        -32,
+        -18
+      ],
+      "size": [
+        24,
+        24
+      ],
+      "variants": {
+        "bestand": {
+          "label": "Bestand",
+          "file": "models/zone-a-bestand.glb"
+        },
+        "neu": {
+          "label": "Neu",
+          "file": "models/zone-a-neu.glb"
+        }
+      }
+    },
+    {
+      "id": "zone-b",
+      "label": "Zone B",
+      "center": [
+        0,
+        -18
+      ],
+      "size": [
+        24,
+        24
+      ],
+      "variants": {
+        "bestand": {
+          "label": "Bestand",
+          "file": "models/zone-b-bestand.glb"
+        },
+        "neu": {
+          "label": "Neu",
+          "file": "models/zone-b-neu.glb"
+        }
+      }
+    },
+    {
+      "id": "zone-c",
+      "label": "Zone C",
+      "center": [
+        32,
+        -18
+      ],
+      "size": [
+        24,
+        24
+      ],
+      "variants": {
+        "bestand": {
+          "label": "Bestand",
+          "file": "models/zone-c-bestand.glb"
+        },
+        "neu": {
+          "label": "Neu",
+          "file": "models/zone-c-neu.glb"
+        }
+      }
+    },
+    {
+      "id": "zone-d",
+      "label": "Zone D",
+      "center": [
+        -32,
+        18
+      ],
+      "size": [
+        24,
+        24
+      ],
+      "variants": {
+        "bestand": {
+          "label": "Bestand",
+          "file": "models/zone-d-bestand.glb"
+        },
+        "neu": {
+          "label": "Neu",
+          "file": "models/zone-d-neu.glb"
+        }
+      }
+    },
+    {
+      "id": "zone-e",
+      "label": "Zone E",
+      "center": [
+        0,
+        18
+      ],
+      "size": [
+        24,
+        24
+      ],
+      "variants": {
+        "bestand": {
+          "label": "Bestand",
+          "file": "models/zone-e-bestand.glb"
+        },
+        "neu": {
+          "label": "Neu",
+          "file": "models/zone-e-neu.glb"
+        }
+      }
+    },
+    {
+      "id": "zone-f",
+      "label": "Zone F",
+      "center": [
+        32,
+        18
+      ],
+      "size": [
+        24,
+        24
+      ],
+      "variants": {
+        "bestand": {
+          "label": "Bestand",
+          "file": "models/zone-f-bestand.glb"
+        },
+        "neu": {
+          "label": "Neu",
+          "file": "models/zone-f-neu.glb"
+        }
+      }
+    }
+  ],
+  "places": [
+    {
+      "id": "ort-a1",
+      "zoneId": "zone-a",
+      "label": "Ort A1",
+      "level": "EG",
+      "position": [
+        -5,
+        1.5,
+        8
+      ]
+    },
+    {
+      "id": "ort-a2",
+      "zoneId": "zone-a",
+      "label": "Ort A2",
+      "level": "EG",
+      "position": [
+        6,
+        1.5,
+        0.5
+      ]
+    },
+    {
+      "id": "ort-b1",
+      "zoneId": "zone-b",
+      "label": "Ort B1",
+      "level": "EG",
+      "position": [
+        -5,
+        1.5,
+        8
+      ]
+    },
+    {
+      "id": "ort-b2",
+      "zoneId": "zone-b",
+      "label": "Ort B2",
+      "level": "EG",
+      "position": [
+        6,
+        1.5,
+        0.5
+      ]
+    },
+    {
+      "id": "ort-c1",
+      "zoneId": "zone-c",
+      "label": "Ort C1",
+      "level": "EG",
+      "position": [
+        -5,
+        1.5,
+        8
+      ]
+    },
+    {
+      "id": "ort-c2",
+      "zoneId": "zone-c",
+      "label": "Ort C2",
+      "level": "EG",
+      "position": [
+        6,
+        1.5,
+        0.5
+      ]
+    },
+    {
+      "id": "ort-d1",
+      "zoneId": "zone-d",
+      "label": "Ort D1",
+      "level": "EG",
+      "position": [
+        -5,
+        1.5,
+        8
+      ]
+    },
+    {
+      "id": "ort-d2",
+      "zoneId": "zone-d",
+      "label": "Ort D2",
+      "level": "EG",
+      "position": [
+        6,
+        1.5,
+        0.5
+      ]
+    },
+    {
+      "id": "ort-e1",
+      "zoneId": "zone-e",
+      "label": "Ort E1",
+      "level": "EG",
+      "position": [
+        -5,
+        1.5,
+        8
+      ]
+    },
+    {
+      "id": "ort-e2",
+      "zoneId": "zone-e",
+      "label": "Ort E2",
+      "level": "EG",
+      "position": [
+        6,
+        1.5,
+        0.5
+      ]
+    },
+    {
+      "id": "ort-f1",
+      "zoneId": "zone-f",
+      "label": "Ort F1",
+      "level": "EG",
+      "position": [
+        -5,
+        1.5,
+        8
+      ]
+    },
+    {
+      "id": "ort-f2",
+      "zoneId": "zone-f",
+      "label": "Ort F2",
+      "level": "EG",
+      "position": [
+        6,
+        1.5,
+        0.5
+      ]
+    }
+  ],
+  "routeSteps": [
+    {
+      "id": "schritt-a1-1",
+      "placeId": "ort-a1",
+      "label": "Schritt A1.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-a1-2",
+      "placeId": "ort-a1",
+      "label": "Schritt A1.2",
+      "focus": [
+        3,
+        0,
+        -1.5
+      ]
+    },
+    {
+      "id": "schritt-a2-1",
+      "placeId": "ort-a2",
+      "label": "Schritt A2.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-b1-1",
+      "placeId": "ort-b1",
+      "label": "Schritt B1.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-b1-2",
+      "placeId": "ort-b1",
+      "label": "Schritt B1.2",
+      "focus": [
+        3,
+        0,
+        -1.5
+      ]
+    },
+    {
+      "id": "schritt-b2-1",
+      "placeId": "ort-b2",
+      "label": "Schritt B2.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-c1-1",
+      "placeId": "ort-c1",
+      "label": "Schritt C1.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-c1-2",
+      "placeId": "ort-c1",
+      "label": "Schritt C1.2",
+      "focus": [
+        3,
+        0,
+        -1.5
+      ]
+    },
+    {
+      "id": "schritt-c2-1",
+      "placeId": "ort-c2",
+      "label": "Schritt C2.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-d1-1",
+      "placeId": "ort-d1",
+      "label": "Schritt D1.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-d1-2",
+      "placeId": "ort-d1",
+      "label": "Schritt D1.2",
+      "focus": [
+        3,
+        0,
+        -1.5
+      ]
+    },
+    {
+      "id": "schritt-d2-1",
+      "placeId": "ort-d2",
+      "label": "Schritt D2.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-e1-1",
+      "placeId": "ort-e1",
+      "label": "Schritt E1.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-e1-2",
+      "placeId": "ort-e1",
+      "label": "Schritt E1.2",
+      "focus": [
+        3,
+        0,
+        -1.5
+      ]
+    },
+    {
+      "id": "schritt-e2-1",
+      "placeId": "ort-e2",
+      "label": "Schritt E2.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-f1-1",
+      "placeId": "ort-f1",
+      "label": "Schritt F1.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "schritt-f1-2",
+      "placeId": "ort-f1",
+      "label": "Schritt F1.2",
+      "focus": [
+        3,
+        0,
+        -1.5
+      ]
+    },
+    {
+      "id": "schritt-f2-1",
+      "placeId": "ort-f2",
+      "label": "Schritt F2.1",
+      "focus": [
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

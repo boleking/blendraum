@@ -1,0 +1,27 @@
+{
+  "name": "twin-test",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Twin Test – Fundament eines Digital-Twin-Viewers (Platzhalter)",
+  "type": "module",
+  "scripts": {
+    "models": "node scripts/build-models.mjs public/models",
+    "dev": "npm run models && vite",
+    "build": "npm run models && tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "shots": "node scripts/shots.mjs"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@types/node": "^26.6.5",
+    "@types/three": "^0.186.0",
+    "playwright-core": "^1.64.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}
