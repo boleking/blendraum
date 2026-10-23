@@ -21,6 +21,7 @@ import {
   type Object3D,
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { Twin, VariantKey } from '../model/types';
 import { cameraPosition, easeInOutCubic, mixState, STAGES, type CamState, type Stage } from './camera-rig';
 import { kelvinToRgb, WARM_KELVIN } from './light';
@@ -72,17 +73,21 @@ export class Viewer {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFShadowMap;
     this.scene.background = new Color(BACKGROUND);
+    // Echte Pakete sind Meshopt-komprimiert; der Decoder steckt im Bundle (kein Fremd-Request).
+    this.loader.setMeshoptDecoder(MeshoptDecoder);
 
     // Warmes Licht: 2700 K Sonne plus weicher Himmel/Boden-Ausgleich statt harter Schwärzen.
     const warm = new Color().setRGB(...kelvinToRgb(WARM_KELVIN), SRGBColorSpace);
     this.scene.add(new HemisphereLight(new Color(0xfff1dc), new Color(0x8a6f55), 1.6));
     this.sun = new DirectionalLight(warm, 3.2);
     const b = resortBounds(twin);
-    this.sun.position.set(b.center[0] - 45, 70, b.center[2] + 30);
+    // Sonne und Schattenbereich wachsen mit dem Resort (Platzhalter ~100 m, echte Pakete mehrere 100 m).
+    const s = Math.max(1, b.size / 150); // Platzhalter: 1, also unverändert
+    this.sun.position.set(b.center[0] - 45 * s, 70 * s, b.center[2] + 30 * s);
     this.sun.target.position.set(b.center[0], 0, b.center[2]);
     this.sun.castShadow = true;
-    const half = b.size / 2 + 6;
-    Object.assign(this.sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half, near: 10, far: 220 });
+    const half = b.size / 2 + 6 * s;
+    Object.assign(this.sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half, near: 10 * s, far: 220 * s });
     const small = Math.min(window.innerWidth, window.innerHeight) < 600;
     this.sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
     this.sun.shadow.radius = 5;
@@ -91,11 +96,14 @@ export class Viewer {
     this.scene.add(this.sun, this.sun.target);
 
     // Boden fängt nur Schatten, damit das UG als geschnittener Sockel sichtbar bleibt.
-    const ground = new Mesh(new PlaneGeometry(600, 600), new ShadowMaterial({ color: 0x5a3a1c, opacity: 0.28 }));
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(b.center[0], -0.01, b.center[2]);
-    ground.receiveShadow = true;
-    this.scene.add(ground);
+    // Mit echtem Gelände fängt dieses die Schatten selbst.
+    if (!twin.terrain) {
+      const ground = new Mesh(new PlaneGeometry(600, 600), new ShadowMaterial({ color: 0x5a3a1c, opacity: 0.28 }));
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.set(b.center[0], -0.01, b.center[2]);
+      ground.receiveShadow = true;
+      this.scene.add(ground);
+    }
 
     // Gelände (nur in Paketen, die eines mitbringen) liegt unter allen Zonen.
     if (twin.terrain) {

@@ -90,7 +90,8 @@ export function cameraFor(twin: Twin, sel: Selection): CamState {
   }
   if (sel.stage === 'zone') {
     const z = twin.zones.find((x) => x.id === sel.zoneId)!;
-    return { ...lens, target: [z.center[0], 2, z.center[1]], frame: FRAME.zone };
+    // Große Zonen (echte Pakete) ganz zeigen, kleine wie bisher mit festem Ausschnitt.
+    return { ...lens, target: [z.center[0], 2, z.center[1]], frame: Math.max(FRAME.zone, Math.hypot(z.size[0], z.size[1]) * 0.9) };
   }
   const p = placeWorld(twin, sel.placeId);
   if (sel.stage === 'ort') return { ...lens, target: p, frame: FRAME.ort };

@@ -3,6 +3,7 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 
 // Im Build verbietet eine CSP alle fremden Ursprünge: keine CDNs, Webfonts oder Tracker.
+// 'wasm-unsafe-eval' erlaubt nur das Übersetzen von WebAssembly (Meshopt-Decoder im Bundle), kein JS-eval.
 const csp: Plugin = {
   name: 'twin-csp',
   apply: 'build',
@@ -12,7 +13,7 @@ const csp: Plugin = {
       attrs: {
         'http-equiv': 'Content-Security-Policy',
         content:
-          "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'",
+          "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'",
       },
       injectTo: 'head-prepend',
     },
