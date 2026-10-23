@@ -78,7 +78,7 @@ export function resortBounds(twin: Twin) {
 export function placeWorld(twin: Twin, placeId: string): Vec3 {
   const p = twin.places.find((x) => x.id === placeId)!;
   const z = twin.zones.find((x) => x.id === p.zoneId)!;
-  return [z.center[0] + p.position[0], p.position[1], z.center[1] + p.position[2]];
+  return [z.center[0] + p.position[0], (z.base ?? 0) + p.position[1], z.center[1] + p.position[2]];
 }
 
 /** Zielzustand der Kamera für eine Auswahl. */
@@ -91,7 +91,7 @@ export function cameraFor(twin: Twin, sel: Selection): CamState {
   if (sel.stage === 'zone') {
     const z = twin.zones.find((x) => x.id === sel.zoneId)!;
     // Große Zonen (echte Pakete) ganz zeigen, kleine wie bisher mit festem Ausschnitt.
-    return { ...lens, target: [z.center[0], 2, z.center[1]], frame: Math.max(FRAME.zone, Math.hypot(z.size[0], z.size[1]) * 0.9) };
+    return { ...lens, target: [z.center[0], (z.base ?? 0) + 2, z.center[1]], frame: Math.max(FRAME.zone, Math.hypot(z.size[0], z.size[1]) * 0.9) };
   }
   const p = placeWorld(twin, sel.placeId);
   if (sel.stage === 'ort') return { ...lens, target: p, frame: FRAME.ort };

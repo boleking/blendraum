@@ -17,6 +17,7 @@ import {
   Scene,
   ShadowMaterial,
   SRGBColorSpace,
+  Vector3,
   WebGLRenderer,
   type Object3D,
 } from 'three';
@@ -48,7 +49,9 @@ export class Viewer {
   private requested = new Map<string, VariantKey>();
   private grows = new Map<Group, number>();
   private markers = new Map<string, Mesh>();
-  private outline: LineLoop;
+  private outlines = new Map<string, LineLoop>();
+  /** Zonen, für die die Detailfassung angefordert ist */
+  private detailed = new Set<string>();
   private sun: DirectionalLight;
   private state: CamState;
   private stage: Stage = 'resort';
@@ -114,6 +117,7 @@ export class Viewer {
           const terrain = model.clone();
           terrain.name = 'terrain';
           this.scene.add(terrain);
+          this.drapeOutlines(terrain);
           this.requestFrame();
         })
         .catch((e) => this.onError(e))
@@ -140,12 +144,17 @@ export class Viewer {
       this.scene.add(m);
     }
 
-    const pts = [-1, -1, 1, -1, 1, 1, -1, 1].map((v) => v * 0.5);
-    const lineGeo = new BufferGeometry();
-    lineGeo.setAttribute('position', new Float32BufferAttribute([0, 1, 2, 3].flatMap((i) => [pts[i * 2], 0, pts[i * 2 + 1]]), 3));
-    this.outline = new LineLoop(lineGeo, new LineBasicMaterial({ color: ACCENT }));
-    this.outline.position.y = 0.03;
-    this.scene.add(this.outline);
+    // Umriss je Zone entlang des Grundrisses; mit Gelände wird er später auf die Oberfläche gelegt.
+    const outlineMat = new LineBasicMaterial({ color: ACCENT });
+    for (const zone of twin.zones) {
+      const geo = new BufferGeometry();
+      const y = (zone.base ?? 0) + 0.03;
+      geo.setAttribute('position', new Float32BufferAttribute(zone.footprint.flatMap(([x, z]) => [x, y, z]), 3));
+      const line = new LineLoop(geo, outlineMat);
+      line.visible = false;
+      this.outlines.set(zone.id, line);
+      this.scene.add(line);
+    }
 
     this.state = cameraFor(twin, { stage: 'resort', zoneId: twin.zones[0].id, placeId: '', stepId: '' });
   }
@@ -176,10 +185,13 @@ export class Viewer {
     this.tween = { from: { ...this.state }, to, start: performance.now(), duration };
 
     const zone = this.twin.zones.find((z) => z.id === sel.zoneId)!;
-    this.outline.scale.set(zone.size[0] + 1, 1, zone.size[1] + 1);
-    this.outline.position.x = zone.center[0];
-    this.outline.position.z = zone.center[1];
-    this.outline.visible = sel.stage === 'resort' || sel.stage === 'zone';
+    for (const [id, line] of this.outlines) line.visible = id === zone.id && (sel.stage === 'resort' || sel.stage === 'zone');
+    // Beim ersten Hineinzoomen die dichtere Fassung der Zone nachladen (falls vorhanden).
+    const hasDetail = Object.values(zone.variants).some((v) => v?.detail);
+    if (sel.stage !== 'resort' && hasDetail && !this.detailed.has(zone.id)) {
+      this.detailed.add(zone.id);
+      this.showVariant(zone.id, this.requested.get(zone.id) ?? 'bestand', true).catch((e) => this.onError(e));
+    }
     for (const [id, m] of this.markers) {
       const active = sel.stage !== 'resort' && sel.stage !== 'zone' && id === sel.placeId;
       m.scale.setScalar(active ? (sel.stage === 'schritt' ? 0.6 : 1.4) : 1);
@@ -188,24 +200,74 @@ export class Viewer {
     this.requestFrame();
   }
 
-  /** Lädt (einmalig) und zeigt eine Variante. Spätere Aufrufe gewinnen gegen langsamere frühere. */
-  async showVariant(zoneId: string, variant: VariantKey): Promise<void> {
+  /**
+   * Lädt (einmalig) und zeigt eine Variante – die Detailfassung, sobald die Zone einmal angezoomt war.
+   * Spätere Aufrufe gewinnen gegen langsamere frühere. `quiet`: ohne Wachsen (Detailtausch).
+   */
+  async showVariant(zoneId: string, variant: VariantKey, quiet = false): Promise<void> {
     const zone = this.twin.zones.find((z) => z.id === zoneId)!;
     const v = zone.variants[variant];
     if (!v) return; // Zone ohne Entwurf: Bestand bleibt stehen
+    const file = this.detailed.has(zoneId) && v.detail ? v.detail.file : v.file;
     this.requested.set(zoneId, variant);
     this.busy(+1);
     try {
-      const model = await this.load(v.file);
+      const model = await this.load(file);
       if (this.requested.get(zoneId) !== variant) return;
       const holder = this.holders.get(zoneId)!;
+      // Eine leichte Fassung darf eine bereits gezeigte Detailfassung nicht überschreiben.
+      if (holder.userData.file === file) return;
+      if (this.detailed.has(zoneId) && v.detail && file !== v.detail.file) return;
       holder.clear();
       holder.add(model.clone());
-      if (!this.reducedMotion && holder.userData.shown) this.grows.set(holder, performance.now());
+      holder.userData.file = file;
+      if (!quiet && !this.reducedMotion && holder.userData.shown) this.grows.set(holder, performance.now());
       holder.userData.shown = true;
       this.requestFrame();
     } finally {
       this.busy(-1);
+    }
+  }
+
+  /**
+   * Legt die Zonenumrisse auf das Gelände (alle 4 m ein Punkt, 1 m darüber).
+   * Höhen aus einem Raster der Gelände-Vertices (höchster Punkt je 4-m-Feld und Nachbarn) –
+   * Raycasts gegen das ganze Gelände blockierten den Browser mehrere Sekunden.
+   */
+  private drapeOutlines(terrain: Object3D) {
+    terrain.updateMatrixWorld(true);
+    const CELL = 4;
+    const heights = new Map<string, number>();
+    const v = new Vector3();
+    terrain.traverse((o) => {
+      if (!(o instanceof Mesh)) return;
+      const pos = o.geometry.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
+        const key = `${Math.round(v.x / CELL)},${Math.round(v.z / CELL)}`;
+        heights.set(key, Math.max(heights.get(key) ?? -Infinity, v.y));
+      }
+    });
+    const heightAt = (x: number, z: number) => {
+      const i = Math.round(x / CELL);
+      const j = Math.round(z / CELL);
+      let h = -Infinity;
+      for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) h = Math.max(h, heights.get(`${i + di},${j + dj}`) ?? -Infinity);
+      return Number.isFinite(h) ? h : null;
+    };
+    for (const zone of this.twin.zones) {
+      const pts: number[] = [];
+      const fp = zone.footprint;
+      fp.forEach(([x0, z0], i) => {
+        const [x1, z1] = fp[(i + 1) % fp.length];
+        const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 4));
+        for (let k = 0; k < n; k++) {
+          const x = x0 + ((x1 - x0) * k) / n;
+          const z = z0 + ((z1 - z0) * k) / n;
+          pts.push(x, (heightAt(x, z) ?? zone.base ?? 0) + 1, z);
+        }
+      });
+      this.outlines.get(zone.id)!.geometry.setAttribute('position', new Float32BufferAttribute(pts, 3));
     }
   }
 

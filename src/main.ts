@@ -73,10 +73,12 @@ function start(twin: Twin) {
 
   // Zonen-Chips
   const zonesEl = $('zones');
+  zonesEl.style.gridTemplateColumns = `repeat(${twin.zones.length}, minmax(0, 1fr))`;
   const chips = twin.zones.map((z) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.textContent = z.label.replace(/^Zone\s+/, '');
+    b.textContent = z.short ?? z.label.replace(/^Zone\s+/, '');
+    b.title = z.label;
     b.addEventListener('click', () => go(selectZone(twin, sel.stage === 'resort' ? { ...sel, stage: 'zone' } : sel, z.id)));
     zonesEl.append(b);
     return b;

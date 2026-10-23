@@ -116,3 +116,21 @@ describe('Navigation', () => {
     }
   });
 });
+
+describe('Große Zonen und Zonen-±0', () => {
+  const big = structuredClone(twin);
+  big.zones[0] = { ...big.zones[0], center: [0, 0], size: [140, 110], base: 8 };
+
+  it('Zonen-Ausschnitt wächst mit der Zone, kleine Zonen bleiben bei 34 m', () => {
+    const s = setStage(big, initialSelection(big), 'zone');
+    expect(cameraFor(big, s).frame).toBeCloseTo(Math.hypot(140, 110) * 0.9);
+    expect(cameraFor(twin, setStage(twin, initialSelection(twin), 'zone')).frame).toBe(34);
+  });
+
+  it('Ort und Zonen-Ziel liegen auf dem ±0 der Zone', () => {
+    const z = cameraFor(big, setStage(big, initialSelection(big), 'zone'));
+    expect(z.target[1]).toBe(10);
+    const o = cameraFor(big, setStage(big, initialSelection(big), 'ort'));
+    expect(o.target[1]).toBeCloseTo(8 + twin.places[0].position[1]);
+  });
+});
