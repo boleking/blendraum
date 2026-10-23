@@ -4,7 +4,7 @@
 //   node scripts/import/standalone.mjs <modell> --out data/<paket> --title "<Titel>" --zone "<Zonenname>"
 //        [--short <Kurzname>] [--up y|z] [--scale 1]
 //        [--triangles 120000] [--texture 2048] [--detail-triangles 250000] [--detail-texture 4096]
-//        [--budget 5] [--zone-budget 5]
+//        [--budget 5] [--zone-budget 5] [--trim 0.005]   (Anteil je Seite, der als Randfetzen wegfällt; 0 = alles)
 //
 // Schreibt <out>/twin.json (georeferenced: false, ohne Nullpunkt), models/<zone>-bestand.glb (leicht, Übersicht),
 // models/<zone>-bestand-detail.glb (beim Hineinzoomen) und import-report.json. Überschreibt nie: <out> darf nicht existieren.
@@ -34,10 +34,15 @@ export function uprightMatrix(scale = 1, up = 'y') {
   throw new Error('--up ist y oder z');
 }
 
-/** Bounding-Box und Bodenhöhe (5-%-Quantil der Höhen) über alle Vertices. */
-export function measure(doc) {
+/**
+ * Grundfläche und Bodenhöhe über alle Vertices. `trim` (Anteil je Seite, z. B. 0.005) schneidet einzelne
+ * Streufetzen am Rand weg, wie Scans sie oft haben – sonst bläht ein Fetzen den Ausschnitt auf.
+ */
+export function measure(doc, trim = 0) {
   let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
   let ys = [];
+  let xs = [];
+  let zs = [];
   for (const mesh of doc.getRoot().listMeshes()) {
     for (const p of mesh.listPrimitives()) {
       const a = p.getAttribute('POSITION').getArray();
@@ -45,12 +50,21 @@ export function measure(doc) {
         x0 = Math.min(x0, a[i]); x1 = Math.max(x1, a[i]);
         z0 = Math.min(z0, a[i + 2]); z1 = Math.max(z1, a[i + 2]);
         ys.push(a[i + 1]); // alle Punkte: eine feste Schrittweite läuft bei Gittern im Gleichtakt
+        xs.push(a[i]);
+        zs.push(a[i + 2]);
       }
     }
   }
   if (!Number.isFinite(x0)) throw new Error('Modell ohne Vertices');
   ys = Float32Array.from(ys).sort();
-  return { x0, x1, z0, z1, ground: ys[Math.floor(ys.length * 0.05)] };
+  const ground = ys[Math.floor(ys.length * 0.05)];
+  if (trim > 0) {
+    xs = Float32Array.from(xs).sort();
+    zs = Float32Array.from(zs).sort();
+    const q = (arr, f) => arr[Math.min(arr.length - 1, Math.floor(arr.length * f))];
+    return { x0: q(xs, trim), x1: q(xs, 1 - trim), z0: q(zs, trim), z1: q(zs, 1 - trim), ground, full: { x0, x1, z0, z1 } };
+  }
+  return { x0, x1, z0, z1, ground, full: { x0, x1, z0, z1 } };
 }
 
 async function version(file, m, box, { triangles, texture, quality }) {
@@ -76,6 +90,7 @@ export async function main(argv) {
       triangles: { type: 'string', default: '120000' }, texture: { type: 'string', default: '2048' },
       'detail-triangles': { type: 'string', default: '250000' }, 'detail-texture': { type: 'string', default: '4096' },
       budget: { type: 'string', default: '5' }, 'zone-budget': { type: 'string', default: '5' },
+      trim: { type: 'string', default: '0.005' },
     },
   });
   const file = positionals[0];
@@ -91,14 +106,16 @@ export async function main(argv) {
   // Maße einmal bestimmen, damit leichte und Detailfassung genau übereinanderliegen
   const probe = await readModel(file);
   bakeTransforms(probe, m);
-  const raw = measure(probe);
+  const raw = measure(probe, +o.trim);
   // Ohne Georeferenz bedeutet die absolute Höhe nichts: Boden auf ±0 legen, sonst schaut die Übersicht ins Leere.
   const lift = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -raw.ground, 0, 1];
   const placed = mat4Mul(lift, m);
   const box = { ...raw, ground: 0 };
   const w = box.x1 - box.x0;
   const d = box.z1 - box.z0;
-  log(`Modell ${basename(file)}: ${w.toFixed(1)} × ${d.toFixed(1)} Einheiten, Boden ≈ ${raw.ground.toFixed(2)} → auf ±0 gesetzt`);
+  const fw = raw.full.x1 - raw.full.x0;
+  const fd = raw.full.z1 - raw.full.z0;
+  log(`Modell ${basename(file)}: ${w.toFixed(1)} × ${d.toFixed(1)} Einheiten (ohne Randfetzen; gesamt ${fw.toFixed(1)} × ${fd.toFixed(1)}), Boden ≈ ${raw.ground.toFixed(2)} → auf ±0 gesetzt`);
   if (w < 5 || d < 5) log('Achtung: kleiner als 5 m – stimmt der Maßstab (--scale)?');
 
   const light = await version(file, placed, box, { triangles: +o.triangles, texture: +o.texture, quality: 80 });
@@ -139,7 +156,7 @@ export async function main(argv) {
   const zoneMB = mb(detail.glb.length);
   const report = {
     date: today, source: basename(file), up: o.up, scale: +o.scale, georeferenced: false,
-    size: { width: r2(w), depth: r2(d), groundInSource: r2(raw.ground), loweredBy: r2(raw.ground) },
+    size: { width: r2(w), depth: r2(d), fullWidth: r2(fw), fullDepth: r2(fd), trim: +o.trim, groundInSource: r2(raw.ground), loweredBy: r2(raw.ground) },
     light: { triangles: light.triangles, trianglesBefore: light.trianglesBefore, MB: r2(mb(light.glb.length)) },
     detail: { triangles: detail.triangles, MB: r2(zoneMB) },
     budget: { initialMB: r2(initial), limitMB: +o.budget, zoneMB: r2(zoneMB), zoneLimitMB: +o['zone-budget'], codeMB: CODE_MB },

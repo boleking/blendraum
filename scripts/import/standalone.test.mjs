@@ -25,7 +25,7 @@ afterAll(() => {
 beforeAll(async () => {
   const doc = new Document();
   const buf = doc.createBuffer();
-  const n = 21;
+  const n = 61; // dicht genug, dass 0,5 % je Seite mehr Punkte sind als der Streufetzen hat
   const pos = [];
   const uv = [];
   for (let j = 0; j < n; j++) {
@@ -47,7 +47,13 @@ beforeAll(async () => {
     .setAttribute('TEXCOORD_0', doc.createAccessor().setType('VEC2').setBuffer(buf).setArray(new Float32Array(uv)))
     .setIndices(doc.createAccessor().setType('SCALAR').setBuffer(buf).setArray(new Uint32Array(idx)))
     .setMaterial(doc.createMaterial('m').setBaseColorTexture(doc.createTexture('t').setImage(new Uint8Array(png)).setMimeType('image/png')));
-  doc.createScene().addChild(doc.createNode('n').setTranslation([100, 0, -50]).setMesh(doc.createMesh().addPrimitive(prim)));
+  // Ein einzelner Streufetzen 200 m daneben, wie Scans ihn oft haben
+  const floater = doc.createPrimitive()
+    .setAttribute('POSITION', doc.createAccessor().setType('VEC3').setBuffer(buf).setArray(new Float32Array([240, 3, 0, 241, 3, 0, 240, 3, 1])))
+    .setAttribute('TEXCOORD_0', doc.createAccessor().setType('VEC2').setBuffer(buf).setArray(new Float32Array([0, 0, 1, 0, 0, 1])))
+    .setIndices(doc.createAccessor().setType('SCALAR').setBuffer(buf).setArray(new Uint32Array([0, 2, 1])))
+    .setMaterial(prim.getMaterial());
+  doc.createScene().addChild(doc.createNode('n').setTranslation([100, 0, -50]).setMesh(doc.createMesh().addPrimitive(prim).addPrimitive(floater)));
   await new NodeIO().write(model, doc);
 }, 60000);
 
@@ -65,16 +71,23 @@ describe('Einzelmodell als Paket', () => {
     const z = twin.zones[0];
     expect(z.id).toBe('gro-e-halle');
     expect(z.short).toBe('Halle');
-    // Grundriss zentriert, 40 × 30 m plus 0,5 m Rand
+    // Grundriss zentriert, 40 × 30 m plus 0,5 m Rand – der Streufetzen 200 m daneben zählt nicht mit (trim 0,5 %)
     expect(z.footprint).toEqual([[-20.5, 15.5], [20.5, 15.5], [20.5, -15.5], [-20.5, -15.5]]);
     // Boden (5-%-Quantil, hier ≈ 1,0) auf ±0 gesetzt – sonst schaut die Übersicht ins Leere
     expect(z.base).toBe(0);
     for (const f of [z.variants.bestand.file, z.variants.bestand.detail.file]) expect(existsSync(join(out, f))).toBe(true);
     expect(z.variants.bestand.source.triangles).toBeLessThanOrEqual(z.variants.bestand.detail.source.triangles);
     const report = JSON.parse(readFileSync(join(out, 'import-report.json'), 'utf8'));
-    expect(report.size).toMatchObject({ width: 40, depth: 30 });
+    expect(report.size).toMatchObject({ width: 40, depth: 30, fullWidth: 241 });
     expect(report.size.groundInSource).toBeGreaterThan(0.5);
     expect(report.size.groundInSource).toBeLessThan(2);
+  }, 60000);
+
+  it('ohne trim zählt auch der Streufetzen', async () => {
+    expect(await main(args(`${outRel}-t`, ['--trim', '0']))).toBe(0);
+    const twin = JSON.parse(readFileSync(join(`${out}-t`, 'twin.json'), 'utf8'));
+    expect(twin.zones[0].footprint[1][0] - twin.zones[0].footprint[0][0]).toBeCloseTo(242, 6); // 241 m plus 2 × 0,5 m Rand
+    rmSync(`${out}-t`, { recursive: true, force: true });
   }, 60000);
 
   it('überschreibt nie ein vorhandenes Paket', async () => {
