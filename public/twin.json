@@ -1,6 +1,8 @@
 {
-  "schema": 1,
+  "schema": 2,
   "title": "Twin Test",
+  "placeholder": true,
+  "origin": null,
   "levels": [
     {
       "id": "UG",
@@ -25,13 +27,23 @@
     {
       "id": "zone-a",
       "label": "Zone A",
-      "center": [
-        -32,
-        -18
-      ],
-      "size": [
-        24,
-        24
+      "footprint": [
+        [
+          -44,
+          -30
+        ],
+        [
+          -20,
+          -30
+        ],
+        [
+          -20,
+          -6
+        ],
+        [
+          -44,
+          -6
+        ]
       ],
       "variants": {
         "bestand": {
@@ -47,13 +59,23 @@
     {
       "id": "zone-b",
       "label": "Zone B",
-      "center": [
-        0,
-        -18
-      ],
-      "size": [
-        24,
-        24
+      "footprint": [
+        [
+          -12,
+          -30
+        ],
+        [
+          12,
+          -30
+        ],
+        [
+          12,
+          -6
+        ],
+        [
+          -12,
+          -6
+        ]
       ],
       "variants": {
         "bestand": {
@@ -69,13 +91,23 @@
     {
       "id": "zone-c",
       "label": "Zone C",
-      "center": [
-        32,
-        -18
-      ],
-      "size": [
-        24,
-        24
+      "footprint": [
+        [
+          20,
+          -30
+        ],
+        [
+          44,
+          -30
+        ],
+        [
+          44,
+          -6
+        ],
+        [
+          20,
+          -6
+        ]
       ],
       "variants": {
         "bestand": {
@@ -91,13 +123,23 @@
     {
       "id": "zone-d",
       "label": "Zone D",
-      "center": [
-        -32,
-        18
-      ],
-      "size": [
-        24,
-        24
+      "footprint": [
+        [
+          -44,
+          6
+        ],
+        [
+          -20,
+          6
+        ],
+        [
+          -20,
+          30
+        ],
+        [
+          -44,
+          30
+        ]
       ],
       "variants": {
         "bestand": {
@@ -113,13 +155,23 @@
     {
       "id": "zone-e",
       "label": "Zone E",
-      "center": [
-        0,
-        18
-      ],
-      "size": [
-        24,
-        24
+      "footprint": [
+        [
+          -12,
+          6
+        ],
+        [
+          12,
+          6
+        ],
+        [
+          12,
+          30
+        ],
+        [
+          -12,
+          30
+        ]
       ],
       "variants": {
         "bestand": {
@@ -135,13 +187,23 @@
     {
       "id": "zone-f",
       "label": "Zone F",
-      "center": [
-        32,
-        18
-      ],
-      "size": [
-        24,
-        24
+      "footprint": [
+        [
+          20,
+          6
+        ],
+        [
+          44,
+          6
+        ],
+        [
+          44,
+          30
+        ],
+        [
+          20,
+          30
+        ]
       ],
       "variants": {
         "bestand": {

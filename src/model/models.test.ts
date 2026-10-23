@@ -21,7 +21,7 @@ describe('build-models', () => {
     expect(files).toHaveLength(twin.zones.length * 2);
     for (const zone of twin.zones) {
       for (const v of ['bestand', 'neu'] as const) {
-        const buf = readFileSync(join(out, zone.variants[v].file));
+        const buf = readFileSync(join(out, zone.variants[v]!.file));
         expect(buf.toString('ascii', 0, 4)).toBe('glTF');
         expect(buf.readUInt32LE(4)).toBe(2);
         expect(buf.readUInt32LE(8)).toBe(buf.length);

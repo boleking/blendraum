@@ -73,6 +73,7 @@ export async function buildAll(outDir, twinPath = join(ROOT, 'public/twin.json')
   const written = [];
   for (const [i, zone] of twin.zones.entries()) {
     for (const variant of ['bestand', 'neu']) {
+      if (!zone.variants[variant]) continue;
       const file = zone.variants[variant].file;
       const target = join(outDir, file);
       mkdirSync(dirname(target), { recursive: true });

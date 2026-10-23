@@ -1,4 +1,5 @@
-// Datenmodell des Twins. Alles hier ist Platzhalter: erfundene Zonen, Orte und Maße.
+// Datenmodell des Twins (Schema 2). Das Platzhalterpaket in public/ ist erfunden;
+// echte Projektpakete kommen über VITE_TWIN aus data/ und werden nie eingecheckt.
 
 export const LEVEL_IDS = ['UG', 'EG', 'OG1'] as const;
 export type LevelId = (typeof LEVEL_IDS)[number];
@@ -7,6 +8,36 @@ export const VARIANT_KEYS = ['bestand', 'neu'] as const;
 export type VariantKey = (typeof VARIANT_KEYS)[number];
 
 export type Vec3 = [number, number, number];
+/** Punkt im Grundriss (x, z) in Web-Metern */
+export type Vec2 = [number, number];
+
+/**
+ * Projekt-Nullpunkt in UTM. Web-Koordinaten: x = E − e, y = H − h, z = −(N − n).
+ * Im Platzhalterpaket `null`: dort gibt es keinen echten Ort.
+ */
+export interface Origin {
+  epsg: number;
+  e: number;
+  n: number;
+  h: number;
+}
+
+/** Herkunft einer Datei, damit jede Masse auf eine benannte Quelle zurückgeht. */
+export interface Source {
+  /** Quelldatei, aus der die Datei erzeugt wurde */
+  file: string;
+  /** Erzeugt am (YYYY-MM-DD) */
+  date: string;
+  triangles: number;
+  /** Kantenlänge der größten Textur in px, falls vorhanden */
+  texture?: number;
+}
+
+export interface ModelFile {
+  /** GLB-Pfad relativ zum Paket, z. B. "models/zone-a-bestand.glb" */
+  file: string;
+  source?: Source;
+}
 
 export interface Level {
   id: LevelId;
@@ -16,20 +47,23 @@ export interface Level {
   height: number;
 }
 
-export interface Variant {
+export interface Variant extends ModelFile {
   label: string;
-  /** GLB-Pfad relativ zur Seite, z. B. "models/zone-a-bestand.glb" */
-  file: string;
+  /** Ersetzt beim Umschalten den Geländeteil der Zone (z. B. Baugrube). Wird erst später dargestellt. */
+  terrainPatch?: ModelFile;
 }
 
 export interface Zone {
   id: string;
   label: string;
-  /** Mittelpunkt im Resort (x, z) */
-  center: [number, number];
-  /** Grundfläche (Breite x, Tiefe z) */
-  size: [number, number];
-  variants: Record<VariantKey, Variant>;
+  /** Grundriss als Polygon (x, z), mindestens drei Punkte */
+  footprint: Vec2[];
+  /** Aus dem Grundriss berechnet: Mitte der Bounding-Box (x, z) */
+  center: Vec2;
+  /** Aus dem Grundriss berechnet: Breite x, Tiefe z der Bounding-Box */
+  size: Vec2;
+  /** Bestand ist Pflicht, Neu nur, wenn es einen Entwurf gibt */
+  variants: { bestand: Variant; neu?: Variant };
 }
 
 export interface Place {
@@ -51,10 +85,29 @@ export interface RouteStep {
 }
 
 export interface Twin {
-  schema: 1;
+  schema: 2;
   title: string;
+  /** true nur im erfundenen Platzhalterpaket */
+  placeholder: boolean;
+  origin: Origin | null;
+  /** Gelände als eigene GLB, nicht Teil einer Zone */
+  terrain?: ModelFile;
   levels: Level[];
   zones: Zone[];
   places: Place[];
   routeSteps: RouteStep[];
+}
+
+/** Alle Modelldateien eines Twins (Gelände, Varianten, Geländeteile), ohne Doppelte. */
+export function modelFiles(twin: Twin): string[] {
+  const files = new Set<string>();
+  if (twin.terrain) files.add(twin.terrain.file);
+  for (const z of twin.zones) {
+    for (const v of [z.variants.bestand, z.variants.neu]) {
+      if (!v) continue;
+      files.add(v.file);
+      if (v.terrainPatch) files.add(v.terrainPatch.file);
+    }
+  }
+  return [...files];
 }
