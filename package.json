@@ -5,7 +5,7 @@
   "description": "Twin Test – Fundament eines Digital-Twin-Viewers (Platzhalter)",
   "type": "module",
   "scripts": {
-    "models": "node scripts/build-models.mjs public/models",
+    "models": "node scripts/build-models.mjs public",
     "dev": "npm run models && vite",
     "build": "npm run models && tsc --noEmit && vite build",
     "preview": "vite preview",
